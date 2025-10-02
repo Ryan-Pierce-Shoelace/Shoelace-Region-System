@@ -1,0 +1,14 @@
+{
+  "name": "com.shoelace.regionsystem",
+  "version": "1.0.0",
+  "displayName": "Shoelace Region System",
+  "description": "Custom solution for painting regions in 2D tilemaps. Agnostic and expandable",
+  "unity": "2021.3",
+  "author": {
+    "name": "Shoelace Dev Team"
+  },
+  "contributors": [
+    { "name": "Ryan Pierce" },
+    { "name": "Travis Pierce" }
+  ]
+}
