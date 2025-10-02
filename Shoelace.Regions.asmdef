@@ -2,8 +2,9 @@
     "name": "Shoelace.RegionSystem",
     "rootNamespace": "Shoelace",
     "references": [
-        "GUID:b1f7bd1f5dd732b47a95ef00f989bbd4",
-        "GUID:79cd310f18406404e9c7283eac848e2f"
+        "GUID:3fdfe6dde2c72ef439fd6cb6d5dca5c8",
+        "GUID:79cd310f18406404e9c7283eac848e2f",
+        "GUID:b1f7bd1f5dd732b47a95ef00f989bbd4"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
