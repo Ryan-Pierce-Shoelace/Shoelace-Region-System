@@ -1,14 +1,12 @@
 using System.Collections.Generic;
 using System.Linq;
-using Shoelace.GridSystem;
-using Shoelace.RegionSystem.RegionCore;
-using Shoelace.RegionSystem.RegionCore.Editor;
-using Shoelace.Utilities;
+using ShoelaceStudios.GridSystem;
+using ShoelaceStudios.Utilities;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Shoelace.RegionSystem.Connectors
+namespace ShoelaceStudios.GridSystem.Regions.Editor
 {
     public class RegionConnectorWindow : EditorWindow
     {

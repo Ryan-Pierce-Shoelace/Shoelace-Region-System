@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Shoelace.RegionSystem.RegionCore
+namespace ShoelaceStudios.GridSystem.Regions
 {
 	[System.Serializable]
 	public struct GridEdge

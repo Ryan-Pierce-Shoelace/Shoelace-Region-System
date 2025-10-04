@@ -1,8 +1,7 @@
 using System;
-using Shoelace.RegionSystem.RegionCore;
 using UnityEngine;
 
-namespace Shoelace.RegionSystem.Connectors
+namespace ShoelaceStudios.GridSystem.Regions
 {
 	[Serializable]
 	public class RegionConnector

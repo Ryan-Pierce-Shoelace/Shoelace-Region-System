@@ -1,9 +1,8 @@
 using System.Collections.Generic;
-using Shoelace.RegionSystem.RegionCore;
 using UnityEditor;
 using UnityEngine;
 
-namespace Shoelace.RegionSystem.Connectors
+namespace ShoelaceStudios.GridSystem.Regions
 {
 	[CreateAssetMenu(menuName = "GridSystem/Regions/ConnectorContainer")]
 	public class ConnectorContainerSO : ScriptableObject

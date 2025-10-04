@@ -1,10 +1,10 @@
-using Shoelace.GridSystem;
-using Shoelace.Utilities;
+using ShoelaceStudios.GridSystem;
+using ShoelaceStudios.Utilities;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace Shoelace.RegionSystem.RegionCore.Editor
+namespace ShoelaceStudios.GridSystem.Regions.Editor
 {
     /// <summary>
     /// Main editor window for painting regions onto the scene grid.

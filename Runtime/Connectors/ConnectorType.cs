@@ -1,4 +1,4 @@
-namespace Shoelace.RegionSystem.Connectors
+namespace ShoelaceStudios.GridSystem.Regions
 {
 	public enum ConnectorType
 	{

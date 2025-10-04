@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Shoelace.RegionSystem.RegionCore
+namespace ShoelaceStudios.GridSystem.Regions
 {
 	public static class RegionUtility
 	{

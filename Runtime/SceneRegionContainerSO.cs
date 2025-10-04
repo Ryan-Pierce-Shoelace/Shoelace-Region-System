@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Shoelace.RegionSystem.RegionCore
+namespace ShoelaceStudios.GridSystem.Regions
 {
 	[CreateAssetMenu(fileName = "SceneRegionContainer", menuName = "GridSystem/Regions/Scene Region Container")]
 	public class SceneRegionContainerSO : ScriptableObject

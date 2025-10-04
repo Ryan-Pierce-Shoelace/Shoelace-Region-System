@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using Shoelace.Utilities;
+using ShoelaceStudios.Utilities;
 using UnityEditor;
 using UnityEngine;
 
-namespace Shoelace.RegionSystem.RegionCore
+namespace ShoelaceStudios.GridSystem.Regions
 {
 	public class RegionDataSO : ScriptableObject
 	{

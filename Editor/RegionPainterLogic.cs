@@ -1,9 +1,9 @@
 using System.Collections.Generic;
-using Shoelace.GridSystem;
+using ShoelaceStudios.GridSystem;
 using UnityEditor;
 using UnityEngine;
 
-namespace Shoelace.RegionSystem.RegionCore.Editor
+namespace ShoelaceStudios.GridSystem.Regions.Editor
 {
 	/// <summary>
 	/// Encapsulates all painting logic for the RegionPainterWindow.
