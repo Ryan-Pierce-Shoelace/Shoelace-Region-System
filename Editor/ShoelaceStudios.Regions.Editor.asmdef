@@ -1,0 +1,18 @@
+{
+    "name": "ShoelaceStudios.Regions.Editor",
+    "rootNamespace": "ShoelaceStudios.GridSystem.Regions.Editor",
+    "references": [
+        "GUID:73b4e463f184130419a076ea18727c12"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [
+        "Editor"
+    ],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
