@@ -5,7 +5,7 @@
   "description": "Custom solution for painting regions in 2D tilemaps. Agnostic and expandable",
   "unity": "2021.3",
   "author": {
-    "name": "Shoelace Dev Team"
+    "name": "Shoelace Studios"
   },
   "contributors": [
     { "name": "Ryan Pierce" },
