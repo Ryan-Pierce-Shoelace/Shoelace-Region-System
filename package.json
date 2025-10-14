@@ -12,7 +12,6 @@
     { "name": "Travis Pierce" }
   ],
   "dependencies": {
-    "ca.shoelacestudios.soap.variables": "https://github.com/Ryan-Pierce-Shoelace/SOAP-Variables.git#main",
-    "com.gitamend.unityutils": "https://github.com/adammyhre/Unity-Utils.git"
+    "ca.shoelacestudios.soap.variables": "https://github.com/Ryan-Pierce-Shoelace/SOAP-Variables.git#main"
   }
 }
