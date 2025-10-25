@@ -2,12 +2,12 @@
     "name": "ShoelaceStudios.Regions.Editor",
     "rootNamespace": "ShoelaceStudios.GridSystem.Regions.Editor",
     "references": [
-        "GUID:73b4e463f184130419a076ea18727c12"
+        "GUID:73b4e463f184130419a076ea18727c12",
+        "GUID:b1f7bd1f5dd732b47a95ef00f989bbd4",
+        "GUID:79cd310f18406404e9c7283eac848e2f"
     ],
     "includePlatforms": [],
-    "excludePlatforms": [
-        "Editor"
-    ],
+    "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,
     "precompiledReferences": [],

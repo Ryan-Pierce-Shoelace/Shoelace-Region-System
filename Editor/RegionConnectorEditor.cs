@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
-using ShoelaceStudios.GridSystem;
-using ShoelaceStudios.Utilities;
+using ShoelaceStudios.Utilities.Helpers;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
