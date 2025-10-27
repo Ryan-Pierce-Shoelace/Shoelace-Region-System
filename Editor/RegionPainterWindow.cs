@@ -27,6 +27,7 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
         private bool rectMode = false;  // Rect vs Pen
         private bool overwrite = false; // Overwrite vs Ignore overlaps
 
+        private bool useWorldUVs = false;
         // Rect drawing state
         private Vector2Int? rectStart = null;
 
@@ -67,7 +68,12 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
 
             DrawRegionManagement();
             DrawActiveRegionControls();
+            DrawMeshGenerationControls();
         }
+
+
+       
+        
 
         private void DrawContainerField()
         {
@@ -167,5 +173,59 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
             foreach (RegionDataSO region in container.Regions)
                 Logic.DrawRegion(region, region == activeRegion);
         }
+        
+        
+        
+        private void DrawMeshGenerationControls()
+        {
+            GUILayout.Space(10);
+            GUILayout.Label("Mesh Generation", EditorStyles.boldLabel);
+
+            useWorldUVs = GUILayout.Toggle(useWorldUVs, "Use World-Space UVs");
+
+            if (GUILayout.Button("Spawn Region Meshes in Scene"))
+            {
+                if (container == null)
+                {
+                    Debug.LogWarning("No region container assigned.");
+                    return;
+                }
+
+                // Optional: create a parent holder for organization
+                GameObject parent = GameObject.Find("Generated_Regions");
+                if (parent == null)
+                    parent = new GameObject("Generated_Regions");
+
+                foreach (var region in container.Regions)
+                {
+                    if (region.ContainedCoords.Count == 0)
+                        continue;
+
+                    // Generate mesh
+                    Mesh mesh = RegionMeshGenerator.GenerateRegionMesh(region, WorldGridManager.Instance, useWorldUVs);
+
+                    // Create GameObject
+                    GameObject regionGO = new GameObject(region.RegionName + "_Mesh");
+                    regionGO.transform.SetParent(parent.transform, false);
+
+                    var mf = regionGO.AddComponent<MeshFilter>();
+                    var mr = regionGO.AddComponent<MeshRenderer>();
+
+                    mf.sharedMesh = mesh;
+
+                    // Create a base-lit material
+                    Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                    mat.color = region.RegionColor;
+
+                    mr.sharedMaterial = mat;
+
+                    // Optional: set sorting order if using 2D URP setup
+                    mr.sortingOrder = 100;
+                }
+
+                Debug.Log($"Spawned {container.Regions.Count} region meshes into the scene.");
+            }
+        }
+
     }
 }
