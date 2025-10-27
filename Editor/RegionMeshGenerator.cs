@@ -21,8 +21,23 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
 
             int vertOffset = 0;
 
-            Vector2Int min = region.ContainedCoords.Min();
-            Vector2Int max = region.ContainedCoords.Max();
+            Vector2Int min = region.ContainedCoords[0];
+            Vector2Int max = min;
+            
+            foreach (Vector2Int coord in region.ContainedCoords)
+            {
+                if (coord.x < min.x || coord.y < min.y)
+                {
+                    min = coord;
+                }
+
+                if (coord.x > max.x || coord.y > max.y)
+                {
+                    max = coord;
+                }
+            }
+            
+           
             
             int width = max.x - min.x;
             int height = max.y - min.y;
