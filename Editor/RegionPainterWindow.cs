@@ -134,6 +134,9 @@ namespace ShoelaceStudios.RegionSystem.Editor
         private void OnSceneGUI(SceneView sceneView)
         {
             if (container == null) return;
+    
+     
+
 
             WorldGridManager grid = WorldGridManager.Instance;
             if (grid == null)
@@ -166,7 +169,6 @@ namespace ShoelaceStudios.RegionSystem.Editor
                 return;
             }
 
-            // CRITICAL FIX: Proper control capture
             int controlID = GUIUtility.GetControlID(FocusType.Passive);
             EventType eventType = e.GetTypeForControl(controlID);
 
