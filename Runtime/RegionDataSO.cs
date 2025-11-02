@@ -5,110 +5,108 @@ using UnityEngine;
 
 namespace ShoelaceStudios.RegionSystem
 {
-	public class RegionDataSO : ScriptableObject
-	{
-		[Header("Region Info")]
-		public string RegionName;
-		public Color RegionColor;
-		public SerializableGuid ID { get; private set; }
+    public class RegionDataSO : ScriptableObject
+    {
+        [Header("Region Info")]
+        public string RegionName;
+        public Color RegionColor;
+        public SerializableGuid ID { get; private set; }
 
-		[Header("Grid Data")]
-		[SerializeField] private List<Vector2Int> containedCoords = new();
-		[SerializeField] private List<GridEdge> perimeterEdges = new();
+        [Header("Grid Data")]
+        [SerializeField] private List<Vector2Int> containedCoords = new();
+        [SerializeField] private List<GridEdge> perimeterEdges = new();
 
+        [SerializeField] private Vector2Int boundsMin;
+        [SerializeField] private Vector2Int boundsMax;
 
-		[SerializeField] private Vector2Int boundsMin;
-		[SerializeField] private Vector2Int boundsMax;
+        private HashSet<Vector2Int> coordsLookup;
 
+        public IReadOnlyList<Vector2Int> ContainedCoords => containedCoords;
+        public IReadOnlyList<GridEdge> PerimeterEdges => perimeterEdges;
+        public Vector2Int BoundsMin => boundsMin;
+        public Vector2Int BoundsMax => boundsMax;
 
-		private HashSet<Vector2Int> coordsLookup;
+        public void Initialize(string n, Color color)
+        {
+            SetRegionName(n);
+            RegionColor = color;
+            ID = SerializableGuid.NewGuid();
+            coordsLookup = new HashSet<Vector2Int>();
+        }
 
-		public IReadOnlyList<Vector2Int> ContainedCoords => containedCoords;
-		public IReadOnlyList<GridEdge> PerimeterEdges => perimeterEdges;
-		public Vector2Int BoundsMin => boundsMin;
-		public Vector2Int BoundsMax => boundsMax;
+        private void OnEnable()
+        {
+            coordsLookup = new HashSet<Vector2Int>(containedCoords);
+        }
 
-		public void Initialize(string n, Color color)
-		{
-			SetRegionName(n);
-			RegionColor = color;
-			ID = SerializableGuid.NewGuid();
-			coordsLookup = new HashSet<Vector2Int>();
-		}
+        public void SetRegionName(string newName)
+        {
+            RegionName = newName;
 
-		private void OnEnable()
-		{
-			coordsLookup = new HashSet<Vector2Int>(containedCoords);
-		}
+            #if UNITY_EDITOR
+            if (!this) return;
 
-		public void SetRegionName(string newName)
-		{
-			RegionName = newName;
+            name = newName;
+            EditorUtility.SetDirty(this);
+            AssetDatabase.SaveAssets();
+            #endif
+        }
 
-			#if UNITY_EDITOR
-			if (!this) return;
+        public void SetColor(Color newColor)
+        {
+            RegionColor = newColor;
 
-			name = newName;
-			EditorUtility.SetDirty(this);
-			AssetDatabase.SaveAssets();
-			#endif
-		}
+            #if UNITY_EDITOR
+            EditorUtility.SetDirty(this);
+            AssetDatabase.SaveAssets();
+            #endif
+        }
 
-		public void SetColor(Color newColor)
-		{
-			RegionColor = newColor;
+        public void SetCoords(IEnumerable<Vector2Int> contained, IEnumerable<GridEdge> edges)
+        {
+            containedCoords.Clear();
+            containedCoords.AddRange(contained);
 
-			#if UNITY_EDITOR
-			EditorUtility.SetDirty(this);
-			AssetDatabase.SaveAssets();
-			#endif
-		}
+            coordsLookup = new HashSet<Vector2Int>(containedCoords);
+            CalculateBounds();
 
-		public void SetCoords(IEnumerable<Vector2Int> contained, IEnumerable<GridEdge> edges)
-		{
-			containedCoords.Clear();
-			containedCoords.AddRange(contained);
+            perimeterEdges.Clear();
+            perimeterEdges.AddRange(edges);
 
-			coordsLookup = new HashSet<Vector2Int>(containedCoords);
-			CalculateBounds();
+            #if UNITY_EDITOR
+            EditorUtility.SetDirty(this);
+            #endif
+        }
 
-			perimeterEdges.Clear();
-			perimeterEdges.AddRange(edges);
+        private void CalculateBounds()
+        {
+            if (containedCoords.Count == 0)
+            {
+                boundsMin = Vector2Int.zero;
+                boundsMax = Vector2Int.zero;
+                return;
+            }
 
-			#if UNITY_EDITOR
-			EditorUtility.SetDirty(this);
-			#endif
-		}
+            boundsMin = containedCoords[0];
+            boundsMax = containedCoords[0];
 
-		private void CalculateBounds()
-		{
-			if (containedCoords.Count == 0)
-			{
-				boundsMin = Vector2Int.zero;
-				boundsMax = Vector2Int.zero;
-				return;
-			}
+            foreach (Vector2Int coord in containedCoords)
+            {
+                if (coord.x < boundsMin.x) boundsMin.x = coord.x;
+                if (coord.y < boundsMin.y) boundsMin.y = coord.y;
+                if (coord.x > boundsMax.x) boundsMax.x = coord.x;
+                if (coord.y > boundsMax.y) boundsMax.y = coord.y;
+            }
+        }
 
-			boundsMin = containedCoords[0];
-			boundsMax = containedCoords[0];
+        public bool ContainsCell(Vector2Int coord)
+        {
+            if (coordsLookup == null)
+            {
+                coordsLookup = new HashSet<Vector2Int>(containedCoords);
+            }
 
-			foreach (Vector2Int coord in containedCoords)
-			{
-				if (coord.x < boundsMin.x) boundsMin.x = coord.x;
-				if (coord.y < boundsMin.y) boundsMin.y = coord.y;
-				if (coord.x > boundsMax.x) boundsMax.x = coord.x;
-				if (coord.y > boundsMax.y) boundsMax.y = coord.y;
-			}
-		}
-
-		public bool ContainsCell(Vector2Int coord)
-		{
-			if (coordsLookup == null)
-			{
-				coordsLookup = new HashSet<Vector2Int>(containedCoords);
-			}
-
-			return coordsLookup.Contains(coord);
-		}
-	}
+            return coordsLookup.Contains(coord);
+        }
+    }
 }

@@ -32,7 +32,8 @@ namespace ShoelaceStudios.RegionSystem.Editor
             Logic = new RegionPainterLogic(this);
             
             if (container == null)
-                container = SceneAssetHelper.GetOrCreateAsset<SceneRegionContainerSO>(SceneManager.GetActiveScene().name + "_Regions");
+                container = SceneAssetHelper.GetOrCreateAsset<SceneRegionContainerSO>(
+                    SceneManager.GetActiveScene().name + "_Regions");
         }
 
         private void OnDisable()
@@ -54,7 +55,8 @@ namespace ShoelaceStudios.RegionSystem.Editor
         private void DrawContainerField()
         {
             GUILayout.Label("Scene Region Container", EditorStyles.boldLabel);
-            container = (SceneRegionContainerSO)EditorGUILayout.ObjectField("Container", container, typeof(SceneRegionContainerSO), false);
+            container = (SceneRegionContainerSO)EditorGUILayout.ObjectField(
+                "Container", container, typeof(SceneRegionContainerSO), false);
         }
 
         private void DrawRegionManagement()
@@ -64,8 +66,12 @@ namespace ShoelaceStudios.RegionSystem.Editor
             if (GUILayout.Button("Add Region"))
                 activeRegion = container.CreateRegion("Region " + container.Regions.Count);
 
-            foreach (RegionDataSO region in container.Regions)
-                DrawRegionRow(region);
+            // FIX: Iterate backwards to avoid collection modification exception
+            for (int i = container.Regions.Count - 1; i >= 0; i--)
+            {
+                if (i < container.Regions.Count)
+                    DrawRegionRow(container.Regions[i]);
+            }
         }
 
         private void DrawRegionRow(RegionDataSO region)
@@ -73,7 +79,9 @@ namespace ShoelaceStudios.RegionSystem.Editor
             EditorGUILayout.BeginHorizontal();
 
             bool hasIslands = Logic.HasMultipleIslands(region.ContainedCoords);
-            GUILayout.Label(hasIslands ? EditorGUIUtility.IconContent("console.warnicon") : GUIContent.none, GUILayout.Width(20));
+            GUILayout.Label(
+                hasIslands ? EditorGUIUtility.IconContent("console.warnicon") : GUIContent.none, 
+                GUILayout.Width(20));
 
             string newName = EditorGUILayout.TextField(region.RegionName);
             if (newName != region.RegionName) region.SetRegionName(newName);
@@ -102,12 +110,14 @@ namespace ShoelaceStudios.RegionSystem.Editor
             GUILayout.Label("Active Region: " + activeRegion.RegionName, EditorStyles.helpBox);
             
             GUI.backgroundColor = painting ? Color.green : Color.white;
-            painting = GUILayout.Toggle(painting, painting ? "✓ PAINTING ENABLED" : "☐ Painting Disabled", "Button", GUILayout.Height(30));
+            painting = GUILayout.Toggle(painting, 
+                painting ? "✓ PAINTING ENABLED" : "☐ Painting Disabled", 
+                "Button", GUILayout.Height(30));
             GUI.backgroundColor = Color.white;
 
             if (!painting)
             {
-                EditorGUILayout.HelpBox("Click 'PAINTING ENABLED' above to start painting!", MessageType.Info);
+                EditorGUILayout.HelpBox("Click 'PAINTING ENABLED' to start painting!", MessageType.Info);
             }
             else
             {
@@ -125,28 +135,62 @@ namespace ShoelaceStudios.RegionSystem.Editor
         {
             if (container == null) return;
 
+            WorldGridManager grid = WorldGridManager.Instance;
+            if (grid == null)
+            {
+                Handles.BeginGUI();
+                GUILayout.BeginArea(new Rect(10, 10, 300, 100));
+                GUILayout.Label("WorldGridManager not found!", 
+                    new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = Color.red }, fontSize = 14 });
+                GUILayout.Label("Add WorldGridManager to scene");
+                GUILayout.EndArea();
+                Handles.EndGUI();
+                return;
+            }
+
             Event e = Event.current;
 
-            // Draw all regions first
             DrawAllRegions();
 
-            if (activeRegion == null || !painting) return;
+            if (activeRegion == null || !painting)
+            {
+                if (activeRegion == null && painting)
+                {
+                    Handles.BeginGUI();
+                    GUILayout.BeginArea(new Rect(10, 10, 300, 60));
+                    GUILayout.Label("No region selected!", 
+                        new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = Color.yellow }, fontSize = 14 });
+                    GUILayout.EndArea();
+                    Handles.EndGUI();
+                }
+                return;
+            }
 
-            // Convert mouse to grid coordinate
+            // CRITICAL FIX: Proper control capture
+            int controlID = GUIUtility.GetControlID(FocusType.Passive);
+            EventType eventType = e.GetTypeForControl(controlID);
+
+            if (eventType == EventType.Layout)
+            {
+                HandleUtility.AddDefaultControl(controlID);
+            }
+
             Vector3 worldPoint = Logic.GetMouseWorldPoint(e);
-            Vector2Int gridCoord = WorldGridManager.Instance.WorldToCell(worldPoint);
-            if (!WorldGridManager.Instance.IsValidCell(gridCoord)) return;
+            Vector2Int gridCoord = grid.WorldToCell(worldPoint);
 
-            // Draw hover preview
+            if (!grid.IsValidCell(gridCoord)) return;
+
             Logic.DrawHoverHighlight(gridCoord, addMode);
 
-            // Apply painting based on mode
             if (rectMode)
-                Logic.HandleRectMode(e, gridCoord, activeRegion, addMode, overwrite, ref rectStart);
+                Logic.HandleRectMode(e, controlID, gridCoord, activeRegion, addMode, overwrite, ref rectStart);
             else
-                Logic.HandlePenMode(e, gridCoord, activeRegion, addMode, overwrite);
+                Logic.HandlePenMode(e, controlID, gridCoord, activeRegion, addMode, overwrite);
 
-            SceneView.RepaintAll();
+            if (e.type == EventType.MouseDown || e.type == EventType.MouseDrag || e.type == EventType.MouseUp)
+            {
+                SceneView.RepaintAll();
+            }
         }
 
         private void DrawAllRegions()
@@ -154,7 +198,7 @@ namespace ShoelaceStudios.RegionSystem.Editor
             foreach (RegionDataSO region in container.Regions)
                 Logic.DrawRegion(region, region == activeRegion);
         }
-        
+
         private void DrawMeshGenerationControls()
         {
             GUILayout.Space(10);
@@ -179,7 +223,8 @@ namespace ShoelaceStudios.RegionSystem.Editor
                     if (region.ContainedCoords.Count == 0)
                         continue;
 
-                    Mesh mesh = RegionMeshGenerator.GenerateRegionMesh(region, FindObjectOfType<WorldGridManager>(), useWorldUVs);
+                    Mesh mesh = RegionMeshGenerator.GenerateRegionMesh(
+                        region, WorldGridManager.Instance, useWorldUVs);
 
                     GameObject regionGO = new GameObject(region.RegionName + "_Mesh");
                     regionGO.transform.SetParent(parent.transform, false);

@@ -12,6 +12,7 @@ namespace ShoelaceStudios.RegionSystem
 		public GridEdge? EdgeB; // Edge on RegionB's perimeter
 
 		public ConnectorType Type;
+
 		public RegionConnector(RegionDataSO regionA, GridEdge edgeA, RegionDataSO regionB, GridEdge? edgeB, ConnectorType type)
 		{
 			RegionA = regionA;
@@ -20,7 +21,7 @@ namespace ShoelaceStudios.RegionSystem
 			EdgeB = edgeB;
 			Type = type;
 		}
-		
+        
 		public override bool Equals(object obj)
 		{
 			if (obj is not RegionConnector other) return false;

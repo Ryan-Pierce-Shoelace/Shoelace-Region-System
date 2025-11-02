@@ -1,6 +1,6 @@
 {
   "name": "ca.shoelacestudios.gridsystem.regionsystem",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "displayName": "Shoelace Region System",
   "description": "Custom solution for painting regions in 2D tilemaps. Agnostic and expandable",
   "unity": "2021.3",
