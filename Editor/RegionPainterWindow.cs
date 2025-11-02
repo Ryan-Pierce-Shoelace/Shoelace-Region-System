@@ -125,56 +125,28 @@ namespace ShoelaceStudios.RegionSystem.Editor
         {
             if (container == null) return;
 
-            WorldGridManager grid = FindObjectOfType<WorldGridManager>();
-            if (grid == null)
-            {
-                Handles.BeginGUI();
-                GUILayout.BeginArea(new Rect(10, 10, 300, 100));
-                GUILayout.Label("WorldGridManager not found!", new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = Color.red }, fontSize = 14 });
-                GUILayout.Label("Add WorldGridManager to scene");
-                GUILayout.EndArea();
-                Handles.EndGUI();
-                return;
-            }
-
             Event e = Event.current;
 
+            // Draw all regions first
             DrawAllRegions();
 
-            if (activeRegion == null || !painting)
-            {
-                if (activeRegion == null && painting)
-                {
-                    Handles.BeginGUI();
-                    GUILayout.BeginArea(new Rect(10, 10, 300, 60));
-                    GUILayout.Label("No region selected!", new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = Color.yellow }, fontSize = 14 });
-                    GUILayout.EndArea();
-                    Handles.EndGUI();
-                }
-                return;
-            }
+            if (activeRegion == null || !painting) return;
 
+            // Convert mouse to grid coordinate
             Vector3 worldPoint = Logic.GetMouseWorldPoint(e);
-            Vector2Int gridCoord = grid.WorldToCell(worldPoint);
+            Vector2Int gridCoord = WorldGridManager.Instance.WorldToCell(worldPoint);
+            if (!WorldGridManager.Instance.IsValidCell(gridCoord)) return;
 
-            if (!grid.IsValidCell(gridCoord)) return;
-
+            // Draw hover preview
             Logic.DrawHoverHighlight(gridCoord, addMode);
 
-            if (e.type == EventType.Layout)
-            {
-                HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
-            }
-
+            // Apply painting based on mode
             if (rectMode)
                 Logic.HandleRectMode(e, gridCoord, activeRegion, addMode, overwrite, ref rectStart);
             else
                 Logic.HandlePenMode(e, gridCoord, activeRegion, addMode, overwrite);
 
-            if (e.type == EventType.MouseDown || e.type == EventType.MouseDrag || e.type == EventType.MouseUp)
-            {
-                SceneView.RepaintAll();
-            }
+            SceneView.RepaintAll();
         }
 
         private void DrawAllRegions()

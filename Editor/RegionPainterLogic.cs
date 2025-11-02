@@ -114,51 +114,42 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
 		public void HandlePenMode(Event e, Vector2Int coord, RegionDataSO region, bool addMode, bool overwrite)
 		{
-			if (e.type != EventType.MouseDown && e.type != EventType.MouseDrag)
-				return;
-
-			if (e.button != 0)
-				return;
-
-			if (e.alt)
+			if ((e.type != EventType.MouseDown && e.type != EventType.MouseDrag) || e.button != 0 || e.alt)
 				return;
 
 			ApplyToRegion(region, new List<Vector2Int> { coord }, addMode, overwrite, editorWindow.Container);
 			e.Use();
+			HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive)); // Capture AFTER use
 		}
 
 		public void HandleRectMode(Event e, Vector2Int coord, RegionDataSO region, bool addMode, bool overwrite, ref Vector2Int? rectStart)
 		{
-			if (e.type == EventType.MouseDown && e.button == 0 && !e.alt && !rectStart.HasValue)
+			if (e.type == EventType.MouseDown && e.button == 0 && !e.alt && rectStart == null)
 			{
 				rectStart = coord;
 				e.Use();
+				HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive)); // Capture on start
 				return;
 			}
 
-			if (rectStart.HasValue)
+			if (!rectStart.HasValue) return;
+
+			Vector2Int start = rectStart.Value;
+			RectInt rect = MakeRect(start, coord);
+
+			Handles.color = new Color(0, 1, 0, 0.2f);
+			Handles.DrawSolidRectangleWithOutline(RectToWorldVerts(rect), new Color(0, 1, 0, 0.1f), Color.green);
+
+			if (e.type == EventType.MouseUp && e.button == 0)
 			{
-				Vector2Int start = rectStart.Value;
-				RectInt rect = MakeRect(start, coord);
+				List<Vector2Int> coords = new List<Vector2Int>();
+				for (int x = rect.xMin; x < rect.xMax; x++)
+				for (int y = rect.yMin; y < rect.yMax; y++)
+					coords.Add(new Vector2Int(x, y));
 
-				Handles.color = new Color(0, 1, 0, 0.2f);
-				Handles.DrawSolidRectangleWithOutline(RectToWorldVerts(rect), new Color(0, 1, 0, 0.1f), Color.green);
-
-				if (e.type == EventType.MouseUp && e.button == 0)
-				{
-					List<Vector2Int> coords = new List<Vector2Int>();
-					for (int x = rect.xMin; x < rect.xMax; x++)
-					{
-						for (int y = rect.yMin; y < rect.yMax; y++)
-						{
-							coords.Add(new Vector2Int(x, y));
-						}
-					}
-
-					ApplyToRegion(region, coords, addMode, overwrite, editorWindow.Container);
-					rectStart = null;
-					e.Use();
-				}
+				ApplyToRegion(region, coords, addMode, overwrite, editorWindow.Container);
+				rectStart = null;
+				e.Use();
 			}
 		}
 
