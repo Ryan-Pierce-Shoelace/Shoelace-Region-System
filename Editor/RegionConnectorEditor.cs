@@ -59,13 +59,14 @@ namespace ShoelaceStudios.RegionSystem.Editor
 		{
 			if (connectorContainer == null || regionContainer == null) return;
 
+			WorldGridManager grid = FindObjectOfType<WorldGridManager>();
+			if (grid == null) return;
+
 			Event ev = Event.current;
 			Vector3 mouseWorld = GetMouseWorldPoint(ev);
 
 			if (ev.type == EventType.Layout)
-			{
 				HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
-			}
 
 			foreach (RegionConnector c in connectorContainer.Connectors)
 			{
@@ -82,32 +83,30 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
 			foreach (RegionDataSO region in regionContainer.Regions)
 			{
-				if (!TryGetEdgeUnderMouse(mouseWorld, region, out GridEdge edge)) continue;
-
-				hoveredRegion = region;
-				hoveredEdge = edge;
-				break;
+				if (TryGetEdgeUnderMouse(mouseWorld, region, out GridEdge edge))
+				{
+					hoveredRegion = region;
+					hoveredEdge = edge;
+					break;
+				}
 			}
 
-			if (hoveredRegion == null) return;
-
-			Vector3[] verts = hoveredEdge.ToWorldVerts(WorldGridManager.Instance.CellSize);
-			Handles.color = Color.cyan;
-			Handles.DrawLine(verts[0], verts[1], 4f);
-			DrawRegion(hoveredRegion, true);
-
-			if (ev.type != EventType.MouseDown || ev.button != 0) return;
-
-			if (ev.shift)
+			if (hoveredRegion != null)
 			{
-				CreateConnector(hoveredRegion, hoveredEdge, ConnectorType.Window);
-			}
-			else
-			{
-				CycleConnectorAtEdge(hoveredRegion, hoveredEdge);
-			}
+				Vector3[] verts = hoveredEdge.ToWorldVerts(grid.CellSize);
+				Handles.color = Color.cyan;
+				Handles.DrawLine(verts[0], verts[1], 4f);
+				DrawRegion(hoveredRegion, true);
 
-			ev.Use();
+				if (ev.type == EventType.MouseDown && ev.button == 0)
+				{
+					if (ev.shift)
+						CreateConnector(hoveredRegion, hoveredEdge, ConnectorType.Window);
+					else
+						CycleConnectorAtEdge(hoveredRegion, hoveredEdge);
+					ev.Use();
+				}
+			}
 		}
 
 		#region Connector Logic
@@ -236,24 +235,26 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
 		private void DrawRegion(RegionDataSO region, bool active)
 		{
-			RegionGizmos.DrawRegion(region, active);
+			if (RegionPainterWindow.Logic == null) return;
+			RegionPainterWindow.Logic.DrawRegion(region, active);
 		}
 
 		private void DrawConnectorGizmo(RegionConnector c)
 		{
-			Vector3[] aVerts = c.EdgeA.ToWorldVerts(WorldGridManager.Instance.CellSize);
-			Vector3[] bVerts = c.RegionB != null ? c.EdgeB?.ToWorldVerts(WorldGridManager.Instance.CellSize) : new Vector3[] { aVerts[0], aVerts[1] };
+			WorldGridManager grid = FindObjectOfType<WorldGridManager>();
+			if (grid == null) return;
+
+			Vector3[] aVerts = c.EdgeA.ToWorldVerts(grid.CellSize);
+			Vector3[] bVerts = c.RegionB != null && c.EdgeB.HasValue
+				? c.EdgeB.Value.ToWorldVerts(grid.CellSize)
+				: new Vector3[] { aVerts[0], aVerts[1] };
 
 			Handles.color = c.Type == ConnectorType.Door ? Color.yellow : Color.cyan;
-			if (bVerts != null)
-			{
-				Handles.DrawLine(aVerts[0], bVerts[0], 2f);
-				Handles.DrawLine(aVerts[1], bVerts[1], 2f);
-			}
+			Handles.DrawLine(aVerts[0], bVerts[0], 2f);
+			Handles.DrawLine(aVerts[1], bVerts[1], 2f);
 
 			Vector3 mid = (aVerts[0] + aVerts[1]) * 0.5f;
-
-			Handles.DrawSolidDisc(mid, Vector3.back, .5f);
+			Handles.DrawSolidDisc(mid, Vector3.back, 0.5f);
 		}
 
 		#endregion
@@ -270,7 +271,14 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
 		private bool TryGetEdgeUnderMouse(Vector3 worldPoint, RegionDataSO region, out GridEdge edge)
 		{
-			float cellSize = WorldGridManager.Instance.CellSize;
+			WorldGridManager grid = FindObjectOfType<WorldGridManager>();
+			if (grid == null)
+			{
+				edge = default;
+				return false;
+			}
+
+			float cellSize = grid.CellSize;
 			float scaledTolerance = edgeHoverTolerance * cellSize;
 
 			foreach (GridEdge e in region.PerimeterEdges)
