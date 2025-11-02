@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace ShoelaceStudios.GridSystem.Regions
+namespace ShoelaceStudios.RegionSystem
 {
 	[System.Serializable]
 	public struct GridEdge
@@ -12,9 +12,9 @@ namespace ShoelaceStudios.GridSystem.Regions
 			Left,
 			Right
 		}
-		
-		public Vector2Int Cell;   // The "owner" cell
-		public CellEdge Edge;     // Which side of the cell
+
+		public Vector2Int Cell; // The "owner" cell
+		public CellEdge Edge; // Which side of the cell
 
 		public GridEdge(Vector2Int cell, CellEdge edge)
 		{
@@ -36,42 +36,68 @@ namespace ShoelaceStudios.GridSystem.Regions
 
 		public Vector3 GetEdgeMiddle(float cellSize)
 		{
-			// center of the cell in world space
-			Vector3 center = new(
+			Vector3 center = new Vector3(
 				(Cell.x + 0.5f) * cellSize,
 				(Cell.y + 0.5f) * cellSize,
 				0
 			);
 
-			// half offset in local space
-			float half = cellSize / 2f;
+			float half = cellSize * 0.5f;
 
 			return Edge switch
 			{
-				CellEdge.Top    => center + new Vector3(0,  half, 0),
+				CellEdge.Top => center + new Vector3(0, half, 0),
 				CellEdge.Bottom => center + new Vector3(0, -half, 0),
-				CellEdge.Left   => center + new Vector3(-half, 0, 0),
-				CellEdge.Right  => center + new Vector3( half, 0, 0),
+				CellEdge.Left => center + new Vector3(-half, 0, 0),
+				CellEdge.Right => center + new Vector3(half, 0, 0),
 				_ => center
 			};
 		}
 
 		// Optional: compute world-space endpoints for visualization
-		public Vector3[] ToWorldVerts(float cellSize)
+		public void GetWorldVerts(float cellSize, Vector3[] output)
 		{
+			if (output == null || output.Length < 2)
+			{
+				Debug.LogError("Output array must have length >= 2");
+				return;
+			}
+
 			Vector3 bl = new(Cell.x * cellSize, Cell.y * cellSize, 0);
 			Vector3 br = bl + new Vector3(cellSize, 0, 0);
 			Vector3 tl = bl + new Vector3(0, cellSize, 0);
 			Vector3 tr = bl + new Vector3(cellSize, cellSize, 0);
 
-			return Edge switch
+			switch (Edge)
 			{
-				CellEdge.Top => new[] { tl, tr },
-				CellEdge.Bottom => new[] { bl, br },
-				CellEdge.Left => new[] { bl, tl },
-				CellEdge.Right => new[] { br, tr },
-				_ => new[] { bl, br }
-			};
+				case CellEdge.Top:
+					output[0] = tl;
+					output[1] = tr;
+					break;
+				case CellEdge.Bottom:
+					output[0] = bl;
+					output[1] = br;
+					break;
+				case CellEdge.Left:
+					output[0] = bl;
+					output[1] = tl;
+					break;
+				case CellEdge.Right:
+					output[0] = br;
+					output[1] = tr;
+					break;
+				default:
+					output[0] = bl;
+					output[1] = br;
+					break;
+			}
+		}
+
+		public Vector3[] ToWorldVerts(float cellSize)
+		{
+			Vector3[] vert = new Vector3[2];
+			GetWorldVerts(cellSize, vert);
+			return vert;
 		}
 	}
 }

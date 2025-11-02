@@ -1,16 +1,14 @@
 using System;
-using UnityEngine;
 
-namespace ShoelaceStudios.GridSystem.Regions
+namespace ShoelaceStudios.RegionSystem
 {
 	[Serializable]
 	public class RegionConnector
 	{
-		public RegionDataSO RegionA; // First region
-		public GridEdge EdgeA; // Edge on RegionA's perimeter
+		public readonly RegionDataSO RegionA; // First region
+		public readonly GridEdge EdgeA; // Edge on RegionA's perimeter
 
 		public RegionDataSO RegionB; // Second region (null or "Outside")
-		public Vector2Int? CellB; // The cell in RegionB or "outside"
 		public GridEdge? EdgeB; // Edge on RegionB's perimeter
 
 		public ConnectorType Type;

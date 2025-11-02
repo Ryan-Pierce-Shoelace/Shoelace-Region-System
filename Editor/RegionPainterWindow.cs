@@ -1,9 +1,10 @@
+using ShoelaceStudios.GridSystem;
 using ShoelaceStudios.Utilities.Helpers;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace ShoelaceStudios.GridSystem.Regions.Editor
+namespace ShoelaceStudios.RegionSystem.Editor
 {
     /// <summary>
     /// Main editor window for painting regions onto the scene grid.
@@ -153,7 +154,7 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
 
             // Convert mouse to grid coordinate
             Vector3 worldPoint = Logic.GetMouseWorldPoint(e);
-            Vector2Int gridCoord = WorldGridManager.Instance.GetCell(worldPoint);
+            Vector2Int gridCoord = WorldGridManager.Instance.WorldToCell(worldPoint);
             if (!WorldGridManager.Instance.IsValidCell(gridCoord)) return;
 
             // Draw hover preview
