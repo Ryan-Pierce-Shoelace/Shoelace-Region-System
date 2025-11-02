@@ -16,14 +16,17 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
 		private static void DrawRegionCells(RegionDataSO region, bool isActive)
 		{
-			Color fillColor = new(
+			WorldGridManager gridManager = Object.FindObjectOfType<WorldGridManager>();
+			if (gridManager == null) return;
+
+			Color fillColor = new Color(
 				region.RegionColor.r,
 				region.RegionColor.g,
 				region.RegionColor.b,
 				isActive ? 0.5f : 0.15f
 			);
 
-			Color outlineColor = new(
+			Color outlineColor = new Color(
 				region.RegionColor.r,
 				region.RegionColor.g,
 				region.RegionColor.b,
@@ -34,8 +37,8 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
 			foreach (Vector2Int cell in region.ContainedCoords)
 			{
-				Vector3 cellWorld = WorldGridManager.Instance.CellToWorldSpace(cell);
-				float size = WorldGridManager.Instance.CellSize;
+				Vector3 cellWorld = gridManager.CellToWorldSpace(cell);
+				float size = gridManager.CellSize;
 
 				Vector3[] verts = new Vector3[]
 				{
@@ -51,23 +54,29 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
 		private static void DrawRegionEdges(RegionDataSO region, bool isActive)
 		{
+			WorldGridManager gridManager = Object.FindObjectOfType<WorldGridManager>();
+			if (gridManager == null) return;
+
 			Color edgeColor = isActive ? Color.yellow : region.RegionColor;
 			edgeColor.a = 1f;
 
 			Handles.color = edgeColor;
 			Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
 
-			float thickness = WorldGridManager.Instance.CellSize * (isActive ? 0.5f : 0.2f);
+			float thickness = gridManager.CellSize * (isActive ? 0.5f : 0.2f);
 
 			foreach (GridEdge edge in region.PerimeterEdges)
 			{
-				Vector3[] verts = edge.ToWorldVerts(WorldGridManager.Instance.CellSize);
+				Vector3[] verts = edge.ToWorldVerts(gridManager.CellSize);
 				Handles.DrawLine(verts[0], verts[1], thickness);
 			}
 		}
 
 		private static void DrawIslandWarnings(RegionDataSO region)
 		{
+			WorldGridManager gridManager = Object.FindObjectOfType<WorldGridManager>();
+			if (gridManager == null) return;
+
 			List<HashSet<Vector2Int>> islands = GetIslands(region.ContainedCoords);
 			if (islands.Count <= 1)
 				return;
@@ -79,8 +88,8 @@ namespace ShoelaceStudios.RegionSystem.Editor
 					center += (Vector2)c;
 				center /= island.Count;
 
-				Vector3 worldCenter = WorldGridManager.Instance.CellToWorldSpace(Vector2Int.RoundToInt(center));
-				float size = WorldGridManager.Instance.CellSize * 0.5f;
+				Vector3 worldCenter = gridManager.CellToWorldSpace(Vector2Int.RoundToInt(center));
+				float size = gridManager.CellSize * 0.5f;
 
 				Handles.color = Color.yellow;
 				Handles.DrawWireDisc(worldCenter, Vector3.forward, size);
@@ -90,13 +99,13 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
 		private static List<HashSet<Vector2Int>> GetIslands(IEnumerable<Vector2Int> coords)
 		{
-			List<HashSet<Vector2Int>> islands = new();
-			HashSet<Vector2Int> remaining = new(coords);
+			List<HashSet<Vector2Int>> islands = new List<HashSet<Vector2Int>>();
+			HashSet<Vector2Int> remaining = new HashSet<Vector2Int>(coords);
 
 			while (remaining.Count > 0)
 			{
-				HashSet<Vector2Int> island = new();
-				Queue<Vector2Int> frontier = new();
+				HashSet<Vector2Int> island = new HashSet<Vector2Int>();
+				Queue<Vector2Int> frontier = new Queue<Vector2Int>();
 
 				Vector2Int start = default;
 				foreach (Vector2Int c in remaining)
@@ -113,12 +122,12 @@ namespace ShoelaceStudios.RegionSystem.Editor
 				{
 					Vector2Int current = frontier.Dequeue();
 
-					Vector2Int[] neighbors =
+					Vector2Int[] neighbors = new Vector2Int[]
 					{
-						new(current.x + 1, current.y),
-						new(current.x - 1, current.y),
-						new(current.x, current.y + 1),
-						new(current.x, current.y - 1)
+						new Vector2Int(current.x + 1, current.y),
+						new Vector2Int(current.x - 1, current.y),
+						new Vector2Int(current.x, current.y + 1),
+						new Vector2Int(current.x, current.y - 1)
 					};
 
 					foreach (Vector2Int neighbor in neighbors)

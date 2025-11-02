@@ -145,22 +145,30 @@ namespace ShoelaceStudios.RegionSystem.Editor
         {
             if (container == null) return;
 
+            WorldGridManager grid = FindObjectOfType<WorldGridManager>();
+            if (grid == null)
+            {
+                Handles.Label(
+                    sceneView.camera.transform.position + sceneView.camera.transform.forward * 10,
+                    "WorldGridManager not found!\nAdd WorldGridManager to scene.",
+                    new GUIStyle { normal = { textColor = Color.red }, fontSize = 16, fontStyle = FontStyle.Bold }
+                );
+                return;
+            }
+
             Event e = Event.current;
 
-            // Draw all regions
             DrawAllRegions();
 
             if (activeRegion == null || !painting) return;
 
-            // Convert mouse to grid coordinate
             Vector3 worldPoint = Logic.GetMouseWorldPoint(e);
-            Vector2Int gridCoord = WorldGridManager.Instance.WorldToCell(worldPoint);
-            if (!WorldGridManager.Instance.IsValidCell(gridCoord)) return;
+            Vector2Int gridCoord = grid.WorldToCell(worldPoint);
+    
+            if (!grid.IsValidCell(gridCoord)) return;
 
-            // Draw hover preview
             Logic.DrawHoverHighlight(gridCoord, addMode);
 
-            // Apply painting based on mode
             if (rectMode)
                 Logic.HandleRectMode(e, gridCoord, activeRegion, addMode, overwrite, ref rectStart);
             else

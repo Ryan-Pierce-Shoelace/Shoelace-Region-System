@@ -236,25 +236,28 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
 		private void DrawRegion(RegionDataSO region, bool active)
 		{
-			RegionGizmos.DrawRegion(region, active);
+			if (RegionPainterWindow.Logic == null) return;
+			RegionPainterWindow.Logic.DrawRegion(region, active);
 		}
 
 		private void DrawConnectorGizmo(RegionConnector c)
 		{
-			Vector3[] aVerts = c.EdgeA.ToWorldVerts(WorldGridManager.Instance.CellSize);
-			Vector3[] bVerts = c.RegionB != null ? c.EdgeB?.ToWorldVerts(WorldGridManager.Instance.CellSize) : new Vector3[] { aVerts[0], aVerts[1] };
+			WorldGridManager grid = FindObjectOfType<WorldGridManager>();
+			if (grid == null) return;
+
+			Vector3[] aVerts = c.EdgeA.ToWorldVerts(grid.CellSize);
+			Vector3[] bVerts = c.RegionB != null && c.EdgeB.HasValue
+				? c.EdgeB.Value.ToWorldVerts(grid.CellSize)
+				: new Vector3[] { aVerts[0], aVerts[1] };
 
 			Handles.color = c.Type == ConnectorType.Door ? Color.yellow : Color.cyan;
-			if (bVerts != null)
-			{
-				Handles.DrawLine(aVerts[0], bVerts[0], 2f);
-				Handles.DrawLine(aVerts[1], bVerts[1], 2f);
-			}
+			Handles.DrawLine(aVerts[0], bVerts[0], 2f);
+			Handles.DrawLine(aVerts[1], bVerts[1], 2f);
 
 			Vector3 mid = (aVerts[0] + aVerts[1]) * 0.5f;
-
-			Handles.DrawSolidDisc(mid, Vector3.back, .5f);
+			Handles.DrawSolidDisc(mid, Vector3.back, 0.5f);
 		}
+
 
 		#endregion
 
@@ -270,7 +273,14 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
 		private bool TryGetEdgeUnderMouse(Vector3 worldPoint, RegionDataSO region, out GridEdge edge)
 		{
-			float cellSize = WorldGridManager.Instance.CellSize;
+			WorldGridManager grid = FindObjectOfType<WorldGridManager>();
+			if (grid == null)
+			{
+				edge = default;
+				return false;
+			}
+
+			float cellSize = grid.CellSize;
 			float scaledTolerance = edgeHoverTolerance * cellSize;
 
 			foreach (GridEdge e in region.PerimeterEdges)
