@@ -9,9 +9,43 @@ namespace ShoelaceStudios.RegionSystem
 	{
 		public List<RegionConnector> Connectors = new();
 
+
+		private void OnEnable()
+		{
+			ValidateConnectors();
+		}
+
+		private void ValidateConnectors()
+		{
+			if (Connectors == null || Connectors.Count == 0)
+				return;
+
+			int removed = Connectors.RemoveAll(c => c == null || c.RegionA == null);
+
+			if (removed > 0)
+			{
+				Debug.LogWarning($"[ConnectorContainerSO] Removed {removed} connectors with NULL RegionA from {name}");
+				#if UNITY_EDITOR
+				EditorUtility.SetDirty(this);
+				#endif
+			}
+		}
+
 		public void AddConnector(RegionConnector connector)
 		{
-			if (connector == null || Connectors.Contains(connector))
+			if (connector == null)
+			{
+				Debug.LogError("[ConnectorContainerSO] Cannot add NULL connector");
+				return;
+			}
+
+			if (connector.RegionA == null)
+			{
+				Debug.LogError("[ConnectorContainerSO] Cannot add connector - RegionA is NULL");
+				return;
+			}
+
+			if (Connectors.Contains(connector))
 				return;
 
 			Connectors.Add(connector);
@@ -48,6 +82,9 @@ namespace ShoelaceStudios.RegionSystem
 
 		private bool ShouldRemoveConnector(RegionConnector connector, RegionDataSO updatedRegion)
 		{
+			if (connector == null || connector.RegionA == null)
+				return true;
+
 			if (connector.RegionA == updatedRegion)
 			{
 				if (!updatedRegion.ContainsCell(connector.EdgeA.Cell))
@@ -61,6 +98,22 @@ namespace ShoelaceStudios.RegionSystem
 			}
 
 			return false;
+		}
+
+
+		[ContextMenu("Clean Invalid Connectors")]
+		public void CleanInvalidConnectors()
+		{
+			int before = Connectors.Count;
+			Connectors.RemoveAll(c => c == null || c.RegionA == null);
+			int after = Connectors.Count;
+
+			Debug.Log($"[ConnectorContainerSO] Cleaned {before - after} invalid connectors. {after} remain.");
+
+			#if UNITY_EDITOR
+			EditorUtility.SetDirty(this);
+			AssetDatabase.SaveAssets();
+			#endif
 		}
 	}
 }
