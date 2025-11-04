@@ -31,6 +31,8 @@ namespace ShoelaceStudios.RegionSystem.Editor
             SceneView.duringSceneGui += OnSceneGUI;
             Logic = new RegionPainterLogic(this);
             
+            WorldGridManager.Instance.InitializeGrid();
+            
             if (container == null)
                 container = SceneAssetHelper.GetOrCreateAsset<SceneRegionContainerSO>(
                     SceneManager.GetActiveScene().name + "_Regions");
