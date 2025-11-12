@@ -48,8 +48,8 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
                 triangles.AddRange(new[]
                 {
-                    vertOffset, vertOffset + 2, vertOffset + 1,
-                    vertOffset, vertOffset + 3, vertOffset + 2
+                    vertOffset,  vertOffset + 3, vertOffset + 1,
+                    vertOffset + 3,  vertOffset + 2, vertOffset + 1
                 });
 
                 if (useWorldUVs)
