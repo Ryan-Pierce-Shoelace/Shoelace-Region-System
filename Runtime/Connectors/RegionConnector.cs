@@ -5,8 +5,8 @@ namespace ShoelaceStudios.RegionSystem
 	[Serializable]
 	public class RegionConnector
 	{
-		public readonly RegionDataSO RegionA; // First region
-		public readonly GridEdge EdgeA; // Edge on RegionA's perimeter
+		public RegionDataSO RegionA; // First region
+		public GridEdge EdgeA; // Edge on RegionA's perimeter
 
 		public RegionDataSO RegionB; // Second region (null or "Outside")
 		public GridEdge? EdgeB; // Edge on RegionB's perimeter
@@ -21,7 +21,7 @@ namespace ShoelaceStudios.RegionSystem
 			EdgeB = edgeB;
 			Type = type;
 		}
-        
+		
 		public override bool Equals(object obj)
 		{
 			if (obj is not RegionConnector other) return false;
