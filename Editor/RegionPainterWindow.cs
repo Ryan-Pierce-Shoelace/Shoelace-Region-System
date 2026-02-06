@@ -1,19 +1,13 @@
+using ShoelaceStudios.GridSystem;
 using ShoelaceStudios.Utilities.Helpers;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace ShoelaceStudios.GridSystem.Regions.Editor
+namespace ShoelaceStudios.RegionSystem.Editor
 {
-    /// <summary>
-    /// Main editor window for painting regions onto the scene grid.
-    /// Handles UI, scene rendering, and delegates painting logic.
-    /// </summary>
     public class RegionPainterWindow : EditorWindow
     {
-        // -----------------------------
-        // Fields
-        // -----------------------------
         private SceneRegionContainerSO container;
         private RegionDataSO activeRegion;
 
@@ -21,35 +15,27 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
         public RegionDataSO ActiveRegion => activeRegion;
         
         private bool painting = false;
-
-        // Toggles
-        private bool addMode = true;    // Add vs Subtract
-        private bool rectMode = false;  // Rect vs Pen
-        private bool overwrite = false; // Overwrite vs Ignore overlaps
-
+        private bool addMode = true;
+        private bool rectMode = false;
+        private bool overwrite = false;
         private bool useWorldUVs = false;
-        // Rect drawing state
         private Vector2Int? rectStart = null;
 
-        // Encapsulated painting logic
         public static RegionPainterLogic Logic;
 
-        // -----------------------------
-        // Menu
-        // -----------------------------
         [MenuItem("Tools/Region Painter")]
         public static void OpenWindow() => GetWindow<RegionPainterWindow>("Region Painter");
 
-        // -----------------------------
-        // Unity callbacks
-        // -----------------------------
         private void OnEnable()
         {
             SceneView.duringSceneGui += OnSceneGUI;
             Logic = new RegionPainterLogic(this);
             
-	            if (container == null)
-		            container = SceneAssetHelper.GetOrCreateAsset<SceneRegionContainerSO>(SceneManager.GetActiveScene().name + "_Regions");
+            WorldGridManager.Instance.InitializeGrid();
+            
+            if (container == null)
+                container = SceneAssetHelper.GetOrCreateAsset<SceneRegionContainerSO>(
+                    SceneManager.GetActiveScene().name + "_Regions");
         }
 
         private void OnDisable()
@@ -57,9 +43,6 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
             SceneView.duringSceneGui -= OnSceneGUI;
         }
 
-        // -----------------------------
-        // GUI
-        // -----------------------------
         private void OnGUI()
         {
             DrawContainerField();
@@ -71,14 +54,11 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
             DrawMeshGenerationControls();
         }
 
-
-       
-        
-
         private void DrawContainerField()
         {
             GUILayout.Label("Scene Region Container", EditorStyles.boldLabel);
-            container = (SceneRegionContainerSO)EditorGUILayout.ObjectField("Container", container, typeof(SceneRegionContainerSO), false);
+            container = (SceneRegionContainerSO)EditorGUILayout.ObjectField(
+                "Container", container, typeof(SceneRegionContainerSO), false);
         }
 
         private void DrawRegionManagement()
@@ -88,30 +68,32 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
             if (GUILayout.Button("Add Region"))
                 activeRegion = container.CreateRegion("Region " + container.Regions.Count);
 
-            foreach (RegionDataSO region in container.Regions)
-                DrawRegionRow(region);
+            // FIX: Iterate backwards to avoid collection modification exception
+            for (int i = container.Regions.Count - 1; i >= 0; i--)
+            {
+                if (i < container.Regions.Count)
+                    DrawRegionRow(container.Regions[i]);
+            }
         }
 
         private void DrawRegionRow(RegionDataSO region)
         {
             EditorGUILayout.BeginHorizontal();
 
-            // Multiple islands warning
             bool hasIslands = Logic.HasMultipleIslands(region.ContainedCoords);
-            GUILayout.Label(hasIslands ? EditorGUIUtility.IconContent("console.warnicon") : GUIContent.none, GUILayout.Width(20));
+            GUILayout.Label(
+                hasIslands ? EditorGUIUtility.IconContent("console.warnicon") : GUIContent.none, 
+                GUILayout.Width(20));
 
-            // Name and color
             string newName = EditorGUILayout.TextField(region.RegionName);
             if (newName != region.RegionName) region.SetRegionName(newName);
 
             Color newColor = EditorGUILayout.ColorField(region.RegionColor, GUILayout.MaxWidth(60));
             if (newColor != region.RegionColor) region.SetColor(newColor);
 
-            // Selection toggle
             if (GUILayout.Toggle(region == activeRegion, "Select", "Button"))
                 activeRegion = region;
 
-            // Remove button
             if (GUILayout.Button("X", GUILayout.Width(20)))
             {
                 container.RemoveRegion(region);
@@ -128,44 +110,91 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
             if (activeRegion == null) return;
 
             GUILayout.Label("Active Region: " + activeRegion.RegionName, EditorStyles.helpBox);
-            painting = GUILayout.Toggle(painting, "Painting Mode", "Button");
+            
+            GUI.backgroundColor = painting ? Color.green : Color.white;
+            painting = GUILayout.Toggle(painting, 
+                painting ? "✓ PAINTING ENABLED" : "☐ Painting Disabled", 
+                "Button", GUILayout.Height(30));
+            GUI.backgroundColor = Color.white;
+
+            if (!painting)
+            {
+                EditorGUILayout.HelpBox("Click 'PAINTING ENABLED' to start painting!", MessageType.Info);
+            }
+            else
+            {
+                EditorGUILayout.HelpBox("Click in Scene View to paint. Hold Alt to move camera.", MessageType.Info);
+            }
 
             GUILayout.Space(5);
 
-            addMode = GUILayout.Toggle(addMode, addMode ? "Add Mode" : "Subtract Mode", "Button");
-            rectMode = GUILayout.Toggle(rectMode, rectMode ? "Rect Draw" : "Pen Draw", "Button");
-            overwrite = GUILayout.Toggle(overwrite, overwrite ? "Overwrite On" : "Overwrite Off", "Button");
+            addMode = GUILayout.Toggle(addMode, addMode ? "Add Mode (Paint)" : "Subtract Mode (Erase)", "Button");
+            rectMode = GUILayout.Toggle(rectMode, rectMode ? "Rect Draw (Drag)" : "Pen Draw (Click)", "Button");
+            overwrite = GUILayout.Toggle(overwrite, overwrite ? "Overwrite: ON" : "Overwrite: OFF", "Button");
         }
 
-        // -----------------------------
-        // Scene GUI / Drawing
-        // -----------------------------
         private void OnSceneGUI(SceneView sceneView)
         {
             if (container == null) return;
+    
+     
+
+
+            WorldGridManager grid = WorldGridManager.Instance;
+            if (grid == null)
+            {
+                Handles.BeginGUI();
+                GUILayout.BeginArea(new Rect(10, 10, 300, 100));
+                GUILayout.Label("WorldGridManager not found!", 
+                    new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = Color.red }, fontSize = 14 });
+                GUILayout.Label("Add WorldGridManager to scene");
+                GUILayout.EndArea();
+                Handles.EndGUI();
+                return;
+            }
 
             Event e = Event.current;
 
-            // Draw all regions
             DrawAllRegions();
 
-            if (activeRegion == null || !painting) return;
+            if (activeRegion == null || !painting)
+            {
+                if (activeRegion == null && painting)
+                {
+                    Handles.BeginGUI();
+                    GUILayout.BeginArea(new Rect(10, 10, 300, 60));
+                    GUILayout.Label("No region selected!", 
+                        new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = Color.yellow }, fontSize = 14 });
+                    GUILayout.EndArea();
+                    Handles.EndGUI();
+                }
+                return;
+            }
 
-            // Convert mouse to grid coordinate
+            int controlID = GUIUtility.GetControlID(FocusType.Passive);
+            EventType eventType = e.GetTypeForControl(controlID);
+
+            if (eventType == EventType.Layout)
+            {
+                HandleUtility.AddDefaultControl(controlID);
+            }
+
             Vector3 worldPoint = Logic.GetMouseWorldPoint(e);
-            Vector2Int gridCoord = WorldGridManager.Instance.GetCell(worldPoint);
-            if (!WorldGridManager.Instance.IsValidCell(gridCoord)) return;
+            Vector2Int gridCoord = grid.WorldToCell(worldPoint);
 
-            // Draw hover preview
+            if (!grid.IsValidCell(gridCoord)) return;
+
             Logic.DrawHoverHighlight(gridCoord, addMode);
 
-            // Apply painting based on mode
             if (rectMode)
-                Logic.HandleRectMode(e, gridCoord, activeRegion, addMode, overwrite, ref rectStart);
+                Logic.HandleRectMode(e, controlID, gridCoord, activeRegion, addMode, overwrite, ref rectStart);
             else
-                Logic.HandlePenMode(e, gridCoord, activeRegion, addMode, overwrite);
+                Logic.HandlePenMode(e, controlID, gridCoord, activeRegion, addMode, overwrite);
 
-            SceneView.RepaintAll();
+            if (e.type == EventType.MouseDown || e.type == EventType.MouseDrag || e.type == EventType.MouseUp)
+            {
+                SceneView.RepaintAll();
+            }
         }
 
         private void DrawAllRegions()
@@ -173,9 +202,7 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
             foreach (RegionDataSO region in container.Regions)
                 Logic.DrawRegion(region, region == activeRegion);
         }
-        
-        
-        
+
         private void DrawMeshGenerationControls()
         {
             GUILayout.Space(10);
@@ -191,41 +218,35 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
                     return;
                 }
 
-                // Optional: create a parent holder for organization
                 GameObject parent = GameObject.Find("Generated_Regions");
                 if (parent == null)
                     parent = new GameObject("Generated_Regions");
 
-                foreach (var region in container.Regions)
+                foreach (RegionDataSO region in container.Regions)
                 {
                     if (region.ContainedCoords.Count == 0)
                         continue;
 
-                    // Generate mesh
-                    Mesh mesh = RegionMeshGenerator.GenerateRegionMesh(region, WorldGridManager.Instance, useWorldUVs);
+                    Mesh mesh = RegionMeshGenerator.GenerateRegionMesh(
+                        region, WorldGridManager.Instance, useWorldUVs);
 
-                    // Create GameObject
                     GameObject regionGO = new GameObject(region.RegionName + "_Mesh");
                     regionGO.transform.SetParent(parent.transform, false);
 
-                    var mf = regionGO.AddComponent<MeshFilter>();
-                    var mr = regionGO.AddComponent<MeshRenderer>();
+                    MeshFilter mf = regionGO.AddComponent<MeshFilter>();
+                    MeshRenderer mr = regionGO.AddComponent<MeshRenderer>();
 
                     mf.sharedMesh = mesh;
 
-                    // Create a base-lit material
                     Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
                     mat.color = region.RegionColor;
 
                     mr.sharedMaterial = mat;
-
-                    // Optional: set sorting order if using 2D URP setup
                     mr.sortingOrder = 100;
                 }
 
                 Debug.Log($"Spawned {container.Regions.Count} region meshes into the scene.");
             }
         }
-
     }
 }

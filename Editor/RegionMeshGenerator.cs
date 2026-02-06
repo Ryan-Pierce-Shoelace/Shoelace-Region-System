@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using System.Linq;
+using ShoelaceStudios.GridSystem;
 using UnityEngine;
 
-namespace ShoelaceStudios.GridSystem.Regions.Editor
+namespace ShoelaceStudios.RegionSystem.Editor
 {
     public static class RegionMeshGenerator
     {
@@ -11,43 +11,34 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
         /// </summary>
         public static Mesh GenerateRegionMesh(RegionDataSO region, WorldGridManager grid, bool useWorldUVs)
         {
+            if (region.ContainedCoords.Count == 0)
+            {
+                Debug.LogWarning($"Region '{region.RegionName}' has no cells. Cannot generate mesh.");
+                return null;
+            }
+
             HashSet<Vector2Int> cells = new(region.ContainedCoords);
             float cellSize = grid.CellSize;
 
-            // Collect vertices and triangles
             List<Vector3> vertices = new();
             List<int> triangles = new();
             List<Vector2> uvs = new();
 
             int vertOffset = 0;
 
-            Vector2Int min = region.ContainedCoords[0];
-            Vector2Int max = min;
-            
-            foreach (Vector2Int coord in region.ContainedCoords)
-            {
-                if (coord.x < min.x || coord.y < min.y)
-                {
-                    min = coord;
-                }
+            Vector2Int min = region.BoundsMin;
+            Vector2Int max = region.BoundsMax;
 
-                if (coord.x > max.x || coord.y > max.y)
-                {
-                    max = coord;
-                }
-            }
-            
-           
-            
             int width = max.x - min.x;
             int height = max.y - min.y;
-            
+
+            if (width == 0) width = 1;
+            if (height == 0) height = 1;
 
             foreach (Vector2Int cell in cells)
             {
                 Vector3 basePos = new(cell.x * cellSize, cell.y * cellSize, 0);
 
-                // 4 corners of the cell quad
                 Vector3 bl = basePos;
                 Vector3 br = basePos + new Vector3(cellSize, 0, 0);
                 Vector3 tr = basePos + new Vector3(cellSize, cellSize, 0);
@@ -57,31 +48,35 @@ namespace ShoelaceStudios.GridSystem.Regions.Editor
 
                 triangles.AddRange(new[]
                 {
-                    vertOffset, vertOffset + 2, vertOffset + 1,
-                    vertOffset, vertOffset + 3, vertOffset + 2
+                    vertOffset,  vertOffset + 3, vertOffset + 1,
+                    vertOffset + 3,  vertOffset + 2, vertOffset + 1
                 });
 
                 if (useWorldUVs)
                 {
-                    // UVs mapped directly from world position
-                    uvs.Add(new Vector2(bl.x, bl.y)/ grid.TotalWorldSize);
-                    uvs.Add(new Vector2(br.x, br.y)/ grid.TotalWorldSize);
-                    uvs.Add(new Vector2(tr.x, tr.y)/ grid.TotalWorldSize);
-                    uvs.Add(new Vector2(tl.x, tl.y)/ grid.TotalWorldSize);
+                    Vector2 worldSize = grid.GridWorldSize;
+                    uvs.Add(new Vector2(bl.x / worldSize.x, bl.y / worldSize.y));
+                    uvs.Add(new Vector2(br.x / worldSize.x, br.y / worldSize.y));
+                    uvs.Add(new Vector2(tr.x / worldSize.x, tr.y / worldSize.y));
+                    uvs.Add(new Vector2(tl.x / worldSize.x, tl.y / worldSize.y));
                 }
                 else
                 {
-                    // Local UVs per-cell (0–1 range)
-                    uvs.Add(new Vector2((bl.x - min.x) / width, (bl.y - min.y) / height));
-                    uvs.Add(new Vector2((br.x - min.x) / width, (br.y - min.y) / height));
-                    uvs.Add(new Vector2((tr.x - min.x) / width, (tr.y - min.y) / height));
-                    uvs.Add(new Vector2((tl.x - min.x) / width, (tl.y - min.y) / height));
+                    float minX = min.x * cellSize;
+                    float minY = min.y * cellSize;
+                    float widthWorld = width * cellSize;
+                    float heightWorld = height * cellSize;
+
+                    uvs.Add(new Vector2((bl.x - minX) / widthWorld, (bl.y - minY) / heightWorld));
+                    uvs.Add(new Vector2((br.x - minX) / widthWorld, (br.y - minY) / heightWorld));
+                    uvs.Add(new Vector2((tr.x - minX) / widthWorld, (tr.y - minY) / heightWorld));
+                    uvs.Add(new Vector2((tl.x - minX) / widthWorld, (tl.y - minY) / heightWorld));
                 }
 
                 vertOffset += 4;
             }
 
-            Mesh mesh = new Mesh
+            Mesh mesh = new()
             {
                 name = region.RegionName + "_Mesh",
                 vertices = vertices.ToArray(),

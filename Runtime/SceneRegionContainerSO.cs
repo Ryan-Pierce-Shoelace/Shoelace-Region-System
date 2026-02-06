@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ShoelaceStudios.GridSystem.Regions
+namespace ShoelaceStudios.RegionSystem
 {
 	[CreateAssetMenu(fileName = "SceneRegionContainer", menuName = "GridSystem/Regions/Scene Region Container")]
 	public class SceneRegionContainerSO : ScriptableObject
@@ -12,11 +12,11 @@ namespace ShoelaceStudios.GridSystem.Regions
 		/// <summary>
 		/// Creates and adds a new RegionDataSO as a nested sub-asset.
 		/// </summary>
-		public RegionDataSO CreateRegion(string name = "New Region")
+		public RegionDataSO CreateRegion(string regionName = "New Region")
 		{
 			RegionDataSO newRegion = CreateInstance<RegionDataSO>();
 			newRegion.hideFlags = HideFlags.None;
-			newRegion.Initialize(name, Random.ColorHSV(.7f, 1f, .7f, 1f));
+			newRegion.Initialize(regionName, Random.ColorHSV(.7f, 1f, .7f, 1f));
 
 			regions.Add(newRegion);
 
@@ -30,13 +30,11 @@ namespace ShoelaceStudios.GridSystem.Regions
 
 		public void RemoveRegion(RegionDataSO region)
 		{
-			if (regions.Remove(region))
-			{
-				#if UNITY_EDITOR
-				DestroyImmediate(region, true);
-				UnityEditor.AssetDatabase.SaveAssets();
-				#endif
-			}
+			if (!regions.Remove(region)) return;
+			#if UNITY_EDITOR
+			DestroyImmediate(region, true);
+			UnityEditor.AssetDatabase.SaveAssets();
+			#endif
 		}
 	}
 }

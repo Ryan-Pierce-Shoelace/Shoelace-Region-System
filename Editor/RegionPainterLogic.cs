@@ -3,303 +3,316 @@ using ShoelaceStudios.GridSystem;
 using UnityEditor;
 using UnityEngine;
 
-namespace ShoelaceStudios.GridSystem.Regions.Editor
+namespace ShoelaceStudios.RegionSystem.Editor
 {
-	/// <summary>
-	/// Encapsulates all painting logic for the RegionPainterWindow.
-	/// Handles pen & rect drawing, islands detection, and region updates.
-	/// </summary>
-	public class RegionPainterLogic
-	{
-		private RegionPainterWindow editorWindow;
-		public RegionPainterLogic(RegionPainterWindow regionPainterWindow)
-		{
-			editorWindow = regionPainterWindow;
-		}
+    public class RegionPainterLogic
+    {
+        private RegionPainterWindow editorWindow;
 
-		// -----------------------------
-		// Drawing / Painting
-		// -----------------------------
-		public void DrawRegion(RegionDataSO region, bool isActive)
-		{
-			DrawRegionCells(region, isActive);
-			DrawIslandWarnings(region);
-		}
+        public RegionPainterLogic(RegionPainterWindow regionPainterWindow)
+        {
+            editorWindow = regionPainterWindow;
+        }
 
-		private void DrawRegionCells(RegionDataSO region, bool isActive)
-		{
-			Color drawFill = new Color(region.RegionColor.r, region.RegionColor.g, region.RegionColor.b, isActive ? .5f : 0.15f);
-			Color drawOutline = new Color(region.RegionColor.r, region.RegionColor.g, region.RegionColor.b, .7f);
+        public void DrawRegion(RegionDataSO region, bool isActive)
+        {
+            DrawRegionCells(region, isActive);
+            DrawIslandWarnings(region);
+        }
 
-			Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
+        private void DrawRegionCells(RegionDataSO region, bool isActive)
+        {
+            WorldGridManager grid = WorldGridManager.Instance;
+            if (grid == null) return;
 
-			foreach (Vector2Int cell in region.ContainedCoords)
-			{
-				Vector3 cellWorld = WorldGridManager.Instance.CellToWorldSpace(cell);
-				float size = WorldGridManager.Instance.CellSize;
+            Color drawFill = new Color(
+                region.RegionColor.r, 
+                region.RegionColor.g, 
+                region.RegionColor.b, 
+                isActive ? 0.5f : 0.15f);
+            Color drawOutline = new Color(
+                region.RegionColor.r, 
+                region.RegionColor.g, 
+                region.RegionColor.b, 
+                0.7f);
 
-				Handles.color = drawFill;
-				
-				Handles.DrawSolidRectangleWithOutline(
-					new[]
-					{
-						cellWorld + new Vector3(-0.5f, -0.5f, 0) * size,
-						cellWorld + new Vector3(0.5f, -0.5f, 0) * size,
-						cellWorld + new Vector3(0.5f, 0.5f, 0) * size,
-						cellWorld + new Vector3(-0.5f, 0.5f, 0) * size
-					},
-					drawFill.linear,
-					drawOutline.linear
-				);
-			}
+            Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
 
-			DrawRegionEdges(region, isActive);
-		}
+            foreach (Vector2Int cell in region.ContainedCoords)
+            {
+                Vector3 cellWorld = grid.CellToWorldSpace(cell);
+                float size = grid.CellSize;
 
+                Handles.DrawSolidRectangleWithOutline(
+                    new[]
+                    {
+                        cellWorld + new Vector3(-0.5f, -0.5f, 0) * size,
+                        cellWorld + new Vector3(0.5f, -0.5f, 0) * size,
+                        cellWorld + new Vector3(0.5f, 0.5f, 0) * size,
+                        cellWorld + new Vector3(-0.5f, 0.5f, 0) * size
+                    },
+                    drawFill,
+                    drawOutline
+                );
+            }
 
-		private void DrawRegionEdges(RegionDataSO region, bool isActive)
-		{
-			Color baseColor = region.RegionColor;
-			Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
+            DrawRegionEdges(region, isActive);
+        }
 
-			// Active region gets bright yellow edges
-			Color edgeColor = isActive ? Color.yellow : baseColor;
-			edgeColor.a = 1f; // always fully opaque
+        private void DrawRegionEdges(RegionDataSO region, bool isActive)
+        {
+            WorldGridManager grid = WorldGridManager.Instance;
+            if (grid == null) return;
 
-			Handles.color = edgeColor;
-			float thickness = WorldGridManager.Instance.CellSize * (isActive ? 0.5f : 0.2f);
+            Color edgeColor = isActive ? Color.yellow : region.RegionColor;
+            edgeColor.a = 1f;
 
-			foreach (GridEdge edge in region.PerimeterEdges)
-			{
-				Vector3[] verts = edge.ToWorldVerts(WorldGridManager.Instance.CellSize);
-				Handles.DrawLine(verts[0], verts[1], thickness);
-			}
-		}
+            Handles.color = edgeColor;
+            Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
 
-		public void DrawIslandWarnings(RegionDataSO region)
-		{
-			List<HashSet<Vector2Int>> islands = GetIslands(region.ContainedCoords);
-			if (islands.Count <= 1) return;
+            float thickness = grid.CellSize * (isActive ? 0.5f : 0.2f);
 
-			foreach (HashSet<Vector2Int> island in islands)
-			{
-				Vector2 center = Vector2.zero;
-				foreach (Vector2Int c in island) center += (Vector2)c;
-				center /= island.Count;
+            foreach (GridEdge edge in region.PerimeterEdges)
+            {
+                Vector3[] verts = edge.ToWorldVerts(grid.CellSize);
+                Handles.DrawLine(verts[0], verts[1], thickness);
+            }
+        }
 
-				Vector3 worldCenter = WorldGridManager.Instance.CellToWorldSpace(Vector2Int.RoundToInt(center));
-				float size = WorldGridManager.Instance.CellSize * 0.5f;
+        public void DrawIslandWarnings(RegionDataSO region)
+        {
+            WorldGridManager grid = WorldGridManager.Instance;
+            if (grid == null) return;
 
-				Handles.color = Color.yellow;
-				Handles.DrawWireDisc(worldCenter, Vector3.forward, size);
-				Handles.Label(worldCenter + Vector3.up * size, "⚠", new GUIStyle { fontSize = 16, richText = true });
-			}
-		}
+            List<HashSet<Vector2Int>> islands = GetIslands(region.ContainedCoords);
+            if (islands.Count <= 1) return;
 
-		public void DrawHoverHighlight(Vector2Int coord, bool addMode)
-		{
-			Vector3 worldCenter = WorldGridManager.Instance.CellToWorldSpace(coord);
-			float size = WorldGridManager.Instance.CellSize;
+            foreach (HashSet<Vector2Int> island in islands)
+            {
+                Vector2 center = Vector2.zero;
+                foreach (Vector2Int c in island) center += (Vector2)c;
+                center /= island.Count;
 
-			Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
-			Handles.color = addMode ? Color.green : Color.red;
-			Handles.DrawWireCube(worldCenter, Vector3.one * size * 0.95f);
-		}
-		
-		// -----------------------------
-		// Painting Modes
-		// -----------------------------
-		public void HandlePenMode(Event e, Vector2Int coord, RegionDataSO region, bool addMode, bool overwrite)
-		{
-			if ((e.type != EventType.MouseDown && e.type != EventType.MouseDrag) || e.button != 0 || e.alt)
-				return;
+                Vector3 worldCenter = grid.CellToWorldSpace(Vector2Int.RoundToInt(center));
+                float size = grid.CellSize * 0.5f;
 
-			ApplyToRegion(region, new List<Vector2Int> { coord }, addMode, overwrite, editorWindow.Container);
-			e.Use();
-			HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
-		}
+                Handles.color = Color.yellow;
+                Handles.DrawWireDisc(worldCenter, Vector3.forward, size);
+                Handles.Label(worldCenter + Vector3.up * size, "⚠ ", new GUIStyle { fontSize = 16 });
+            }
+        }
 
-		public void HandleRectMode(Event e, Vector2Int coord, RegionDataSO region, bool addMode, bool overwrite, ref Vector2Int? rectStart)
-		{
-			if (e.type == EventType.MouseDown && e.button == 0 && !e.alt && rectStart == null)
-			{
-				rectStart = coord;
-				e.Use();
-				if (e.type == EventType.Layout)
-					HandleUtility.AddDefaultControl(GUIUtility.GetControlID(FocusType.Passive));
-			}
+        public void DrawHoverHighlight(Vector2Int coord, bool addMode)
+        {
+            WorldGridManager grid = WorldGridManager.Instance;
+            if (grid == null) return;
 
-			if (!rectStart.HasValue) return;
+            Vector3 worldCenter = grid.CellToWorldSpace(coord);
+            float size = grid.CellSize;
 
-			Vector2Int start = rectStart.Value;
-			RectInt rect = MakeRect(start, coord);
+            Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
+            Handles.color = addMode ? Color.green : Color.red;
+            Handles.DrawWireCube(worldCenter, Vector3.one * size * 0.95f);
+        }
 
-			Handles.color = new Color(0, 1, 0, 0.2f);
-			Handles.DrawSolidRectangleWithOutline(RectToWorldVerts(rect), new Color(0, 1, 0, 0.1f), Color.green);
+        public void HandlePenMode(Event e, int controlID, Vector2Int coord, RegionDataSO region, bool addMode, bool overwrite)
+        {
+            EventType eventType = e.GetTypeForControl(controlID);
 
-			if (e.type == EventType.MouseUp && e.button == 0)
-			{
-				List<Vector2Int> coords = new List<Vector2Int>();
-				for (int x = rect.xMin; x < rect.xMax; x++)
-				for (int y = rect.yMin; y < rect.yMax; y++)
-					coords.Add(new Vector2Int(x, y));
+            if (eventType == EventType.MouseDown || eventType == EventType.MouseDrag)
+            {
+                if (e.button == 0 && !e.alt)
+                {
+                    if (eventType == EventType.MouseDown)
+                        GUIUtility.hotControl = controlID;
 
-				ApplyToRegion(region, coords, addMode, overwrite, editorWindow.Container);
-				rectStart = null;
-				e.Use();
-			}
-		}
+                    ApplyToRegion(region, new List<Vector2Int> { coord }, addMode, overwrite, editorWindow.Container);
+                    e.Use();
+                }
+            }
+            else if (eventType == EventType.MouseUp && GUIUtility.hotControl == controlID)
+            {
+                GUIUtility.hotControl = 0;
+                e.Use();
+            }
+        }
 
-		// -----------------------------
-		// Region Updates
-		// -----------------------------
-		private void ApplyToRegion(
-			RegionDataSO region,
-			List<Vector2Int> coords,
-			bool addMode,
-			bool overwrite,
-			SceneRegionContainerSO container)
-		{
-			HashSet<Vector2Int> contained = new HashSet<Vector2Int>(region.ContainedCoords);
+        public void HandleRectMode(Event e, int controlID, Vector2Int coord, RegionDataSO region, bool addMode, bool overwrite, ref Vector2Int? rectStart)
+        {
+            EventType eventType = e.GetTypeForControl(controlID);
 
-			foreach (Vector2Int coord in coords)
-			{
-				if (!WorldGridManager.Instance.IsValidCell(coord)) continue;
+            if (eventType == EventType.MouseDown && e.button == 0 && !e.alt && !rectStart.HasValue)
+            {
+                GUIUtility.hotControl = controlID;
+                rectStart = coord;
+                e.Use();
+                return;
+            }
 
-				if (addMode)
-				{
-					RegionDataSO existing = null;
+            if (rectStart.HasValue)
+            {
+                Vector2Int start = rectStart.Value;
+                RectInt rect = MakeRect(start, coord);
 
-					// Manually find any other region containing this cell
-					foreach (RegionDataSO r in container.Regions)
-					{
-						if (r.ContainsCell(coord))
-						{
-							existing = r;
-							break;
-						}
-					}
+                Handles.color = new Color(0, 1, 0, 0.2f);
+                Handles.DrawSolidRectangleWithOutline(RectToWorldVerts(rect), new Color(0, 1, 0, 0.1f), Color.green);
 
-					if (!overwrite)
-					{
-						// Skip if any other region has this cell
-						if (existing != null && existing != region) continue;
-					}
-					else
-					{
-						// Remove from any other region
-						if (existing != null && existing != region)
-						{
-							HashSet<Vector2Int> otherCoords = new HashSet<Vector2Int>(existing.ContainedCoords);
-							otherCoords.Remove(coord);
-							HashSet<GridEdge> otherPerimeter = RegionUtility.CalculatePerimeterEdges(otherCoords);
-							existing.SetCoords(otherCoords, otherPerimeter);
-							EditorUtility.SetDirty(existing);
-						}
-					}
+                if (eventType == EventType.MouseUp && e.button == 0)
+                {
+                    List<Vector2Int> coords = new List<Vector2Int>();
+                    for (int x = rect.xMin; x < rect.xMax; x++)
+                    {
+                        for (int y = rect.yMin; y < rect.yMax; y++)
+                        {
+                            coords.Add(new Vector2Int(x, y));
+                        }
+                    }
 
-					contained.Add(coord);
-				}
-				else
-				{
-					// Subtract mode
-					contained.Remove(coord);
-				}
-			}
+                    ApplyToRegion(region, coords, addMode, overwrite, editorWindow.Container);
+                    
+                    GUIUtility.hotControl = 0;
+                    rectStart = null;
+                    e.Use();
+                }
+            }
+        }
 
-			HashSet<GridEdge> perimeter = RegionUtility.CalculatePerimeterEdges(contained);
-			region.SetCoords(contained, perimeter);
+        private void ApplyToRegion(RegionDataSO region, List<Vector2Int> coords, bool addMode, bool overwrite, SceneRegionContainerSO container)
+        {
+            WorldGridManager grid = WorldGridManager.Instance;
+            if (grid == null) return;
 
-			EditorUtility.SetDirty(region);
-			if (container != null) EditorUtility.SetDirty(container);
-		}
+            HashSet<Vector2Int> contained = new HashSet<Vector2Int>(region.ContainedCoords);
 
+            foreach (Vector2Int coord in coords)
+            {
+                if (!grid.IsValidCell(coord)) continue;
 
-		// -----------------------------
-		// Helpers
-		// -----------------------------
-		public Vector3 GetMouseWorldPoint(Event e)
-		{
-			Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
-			Plane plane = new Plane(Vector3.forward, Vector3.zero);
-			if (!plane.Raycast(ray, out float dist)) return Vector3.zero;
+                if (addMode)
+                {
+                    RegionDataSO existing = null;
 
-			return ray.GetPoint(dist);
-		}
+                    foreach (RegionDataSO r in container.Regions)
+                    {
+                        if (r.ContainsCell(coord))
+                        {
+                            existing = r;
+                            break;
+                        }
+                    }
 
-		public bool HasMultipleIslands(IEnumerable<Vector2Int> coords)
-		{
-			return GetIslands(coords).Count > 1;
-		}
+                    if (!overwrite)
+                    {
+                        if (existing != null && existing != region) continue;
+                    }
+                    else
+                    {
+                        if (existing != null && existing != region)
+                        {
+                            HashSet<Vector2Int> otherCoords = new HashSet<Vector2Int>(existing.ContainedCoords);
+                            otherCoords.Remove(coord);
+                            HashSet<GridEdge> otherPerimeter = RegionUtility.CalculatePerimeterEdges(otherCoords);
+                            existing.SetCoords(otherCoords, otherPerimeter);
+                            EditorUtility.SetDirty(existing);
+                        }
+                    }
 
-		public List<HashSet<Vector2Int>> GetIslands(IEnumerable<Vector2Int> coords)
-		{
-			List<HashSet<Vector2Int>> islands = new List<HashSet<Vector2Int>>();
-			HashSet<Vector2Int> remaining = new HashSet<Vector2Int>(coords);
+                    contained.Add(coord);
+                }
+                else
+                {
+                    contained.Remove(coord);
+                }
+            }
 
-			while (remaining.Count > 0)
-			{
-				Queue<Vector2Int> queue = new();
-				HashSet<Vector2Int> island = new();
-				Vector2Int start = default;
-				foreach (Vector2Int c in remaining)
-				{
-					start = c;
-					break;
-				}
+            HashSet<GridEdge> perimeter = RegionUtility.CalculatePerimeterEdges(contained);
+            region.SetCoords(contained, perimeter);
 
-				queue.Enqueue(start);
-				island.Add(start);
-				remaining.Remove(start);
+            EditorUtility.SetDirty(region);
+            if (container != null) EditorUtility.SetDirty(container);
+        }
 
-				while (queue.Count > 0)
-				{
-					Vector2Int current = queue.Dequeue();
-					foreach (Vector2Int n in new Vector2Int[]
-					         {
-						         new(current.x + 1, current.y),
-						         new(current.x - 1, current.y),
-						         new(current.x, current.y + 1),
-						         new(current.x, current.y - 1)
-					         })
-					{
-						if (remaining.Contains(n))
-						{
-							queue.Enqueue(n);
-							island.Add(n);
-							remaining.Remove(n);
-						}
-					}
-				}
+        public Vector3 GetMouseWorldPoint(Event e)
+        {
+            Ray ray = HandleUtility.GUIPointToWorldRay(e.mousePosition);
+            Plane plane = new Plane(Vector3.forward, Vector3.zero);
+            if (!plane.Raycast(ray, out float dist)) return Vector3.zero;
+            return ray.GetPoint(dist);
+        }
 
-				islands.Add(island);
-			}
+        public bool HasMultipleIslands(IEnumerable<Vector2Int> coords)
+        {
+            return GetIslands(coords).Count > 1;
+        }
 
-			return islands;
-		}
+        public List<HashSet<Vector2Int>> GetIslands(IEnumerable<Vector2Int> coords)
+        {
+            List<HashSet<Vector2Int>> islands = new List<HashSet<Vector2Int>>();
+            HashSet<Vector2Int> remaining = new HashSet<Vector2Int>(coords);
 
-		private RectInt MakeRect(Vector2Int a, Vector2Int b)
-		{
-			int xMin = Mathf.Min(a.x, b.x);
-			int yMin = Mathf.Min(a.y, b.y);
-			int xMax = Mathf.Max(a.x, b.x);
-			int yMax = Mathf.Max(a.y, b.y);
+            while (remaining.Count > 0)
+            {
+                Queue<Vector2Int> queue = new Queue<Vector2Int>();
+                HashSet<Vector2Int> island = new HashSet<Vector2Int>();
+                Vector2Int start = default;
+                foreach (Vector2Int c in remaining)
+                {
+                    start = c;
+                    break;
+                }
 
-			// width and height are inclusive
-			return new RectInt(xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
-		}
+                queue.Enqueue(start);
+                island.Add(start);
+                remaining.Remove(start);
 
+                while (queue.Count > 0)
+                {
+                    Vector2Int current = queue.Dequeue();
+                    foreach (Vector2Int n in new Vector2Int[]
+                    {
+                        new Vector2Int(current.x + 1, current.y),
+                        new Vector2Int(current.x - 1, current.y),
+                        new Vector2Int(current.x, current.y + 1),
+                        new Vector2Int(current.x, current.y - 1)
+                    })
+                    {
+                        if (remaining.Contains(n))
+                        {
+                            queue.Enqueue(n);
+                            island.Add(n);
+                            remaining.Remove(n);
+                        }
+                    }
+                }
 
-		private Vector3[] RectToWorldVerts(RectInt rect)
-		{
-			float size = WorldGridManager.Instance.CellSize;
-			return new Vector3[]
-			{
-				new Vector3(rect.xMin, rect.yMin, 0) * size,
-				new Vector3(rect.xMax, rect.yMin, 0) * size,
-				new Vector3(rect.xMax, rect.yMax, 0) * size,
-				new Vector3(rect.xMin, rect.yMax, 0) * size
-			};
-		}
-	}
+                islands.Add(island);
+            }
+
+            return islands;
+        }
+
+        private RectInt MakeRect(Vector2Int a, Vector2Int b)
+        {
+            int xMin = Mathf.Min(a.x, b.x);
+            int yMin = Mathf.Min(a.y, b.y);
+            int xMax = Mathf.Max(a.x, b.x);
+            int yMax = Mathf.Max(a.y, b.y);
+            return new RectInt(xMin, yMin, xMax - xMin + 1, yMax - yMin + 1);
+        }
+
+        private Vector3[] RectToWorldVerts(RectInt rect)
+        {
+            WorldGridManager grid = WorldGridManager.Instance;
+            if (grid == null) return new Vector3[4];
+
+            float size = grid.CellSize;
+            return new Vector3[]
+            {
+                new Vector3(rect.xMin, rect.yMin, 0) * size,
+                new Vector3(rect.xMax, rect.yMin, 0) * size,
+                new Vector3(rect.xMax, rect.yMax, 0) * size,
+                new Vector3(rect.xMin, rect.yMax, 0) * size
+            };
+        }
+    }
 }

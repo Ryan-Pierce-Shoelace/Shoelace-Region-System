@@ -2,45 +2,118 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-namespace ShoelaceStudios.GridSystem.Regions
+namespace ShoelaceStudios.RegionSystem
 {
 	[CreateAssetMenu(menuName = "GridSystem/Regions/ConnectorContainer")]
 	public class ConnectorContainerSO : ScriptableObject
 	{
-		public List<RegionConnector> Connectors = new List<RegionConnector>();
+		public List<RegionConnector> Connectors = new();
+
+
+		private void OnEnable()
+		{
+			ValidateConnectors();
+		}
+
+		private void ValidateConnectors()
+		{
+			if (Connectors == null || Connectors.Count == 0)
+				return;
+
+			int removed = Connectors.RemoveAll(c => c == null || c.RegionA == null);
+
+			if (removed > 0)
+			{
+				Debug.LogWarning($"[ConnectorContainerSO] Removed {removed} connectors with NULL RegionA from {name}");
+				#if UNITY_EDITOR
+				EditorUtility.SetDirty(this);
+				#endif
+			}
+		}
 
 		public void AddConnector(RegionConnector connector)
 		{
-			if (!Connectors.Contains(connector))
-				Connectors.Add(connector);
+			if (connector == null)
+			{
+				Debug.LogError("[ConnectorContainerSO] Cannot add NULL connector");
+				return;
+			}
+
+			if (connector.RegionA == null)
+			{
+				Debug.LogError("[ConnectorContainerSO] Cannot add connector - RegionA is NULL");
+				return;
+			}
+
+			if (Connectors.Contains(connector))
+				return;
+
+			Connectors.Add(connector);
+
+			#if UNITY_EDITOR
 			EditorUtility.SetDirty(this);
+			#endif
 		}
 
 		public void RemoveConnector(RegionConnector connector)
 		{
-			Connectors.Remove(connector);
-			EditorUtility.SetDirty(this);
+			if (Connectors.Remove(connector))
+			{
+				#if UNITY_EDITOR
+				EditorUtility.SetDirty(this);
+				#endif
+			}
 		}
 
-		// Automatically clean up connectors when regions change
 		public void OnRegionUpdated(RegionDataSO region)
 		{
-			List<RegionConnector> toRemove = new List<RegionConnector>();
+			if (region == null)
+				return;
 
-			foreach (RegionConnector c in Connectors)
+			int removedCount = Connectors.RemoveAll(connector => ShouldRemoveConnector(connector, region));
+
+			if (removedCount > 0)
 			{
-				if (c.RegionA == region && !region.ContainsCell(c.EdgeA.Cell))
-					toRemove.Add(c);
+				#if UNITY_EDITOR
+				EditorUtility.SetDirty(this);
+				#endif
+			}
+		}
 
-				if (c.RegionB == region && c.CellB != null && !region.ContainsCell(c.CellB.Value))
-					toRemove.Add(c);
+		private bool ShouldRemoveConnector(RegionConnector connector, RegionDataSO updatedRegion)
+		{
+			if (connector == null || connector.RegionA == null)
+				return true;
+
+			if (connector.RegionA == updatedRegion)
+			{
+				if (!updatedRegion.ContainsCell(connector.EdgeA.Cell))
+					return true;
 			}
 
-			foreach (RegionConnector r in toRemove)
-				Connectors.Remove(r);
+			if (connector.RegionB == updatedRegion && connector.EdgeB.HasValue)
+			{
+				if (!updatedRegion.ContainsCell(connector.EdgeB.Value.Cell))
+					return true;
+			}
 
-			if (toRemove.Count > 0)
-				EditorUtility.SetDirty(this);
+			return false;
+		}
+
+
+		[ContextMenu("Clean Invalid Connectors")]
+		public void CleanInvalidConnectors()
+		{
+			int before = Connectors.Count;
+			Connectors.RemoveAll(c => c == null || c.RegionA == null);
+			int after = Connectors.Count;
+
+			Debug.Log($"[ConnectorContainerSO] Cleaned {before - after} invalid connectors. {after} remain.");
+
+			#if UNITY_EDITOR
+			EditorUtility.SetDirty(this);
+			AssetDatabase.SaveAssets();
+			#endif
 		}
 	}
 }

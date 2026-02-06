@@ -1,10 +1,10 @@
 {
     "name": "ShoelaceStudios.Regions.Editor",
-    "rootNamespace": "ShoelaceStudios.GridSystem.Regions.Editor",
+    "rootNamespace": "ShoelaceStudios",
     "references": [
-        "GUID:73b4e463f184130419a076ea18727c12",
         "GUID:b1f7bd1f5dd732b47a95ef00f989bbd4",
-        "GUID:79cd310f18406404e9c7283eac848e2f"
+        "GUID:79cd310f18406404e9c7283eac848e2f",
+        "GUID:73b4e463f184130419a076ea18727c12"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
