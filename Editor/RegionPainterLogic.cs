@@ -1,5 +1,6 @@
+#if UNITY_EDITOR
 using System.Collections.Generic;
-using ShoelaceStudios.GridSystem;
+using ShoelaceStudios.GridSystem.Core;
 using UnityEditor;
 using UnityEngine;
 
@@ -13,13 +14,11 @@ namespace ShoelaceStudios.RegionSystem.Editor
         {
             editorWindow = regionPainterWindow;
         }
-
         public void DrawRegion(RegionDataSO region, bool isActive)
         {
             DrawRegionCells(region, isActive);
             DrawIslandWarnings(region);
         }
-
         private void DrawRegionCells(RegionDataSO region, bool isActive)
         {
             WorldGridManager grid = WorldGridManager.Instance;
@@ -40,7 +39,7 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
             foreach (Vector2Int cell in region.ContainedCoords)
             {
-                Vector3 cellWorld = grid.CellToWorldSpace(cell);
+                Vector3 cellWorld = grid.GetWorldFromCell(cell);
                 float size = grid.CellSize;
 
                 Handles.DrawSolidRectangleWithOutline(
@@ -93,7 +92,7 @@ namespace ShoelaceStudios.RegionSystem.Editor
                 foreach (Vector2Int c in island) center += (Vector2)c;
                 center /= island.Count;
 
-                Vector3 worldCenter = grid.CellToWorldSpace(Vector2Int.RoundToInt(center));
+                Vector3 worldCenter = grid.GetWorldFromCell(Vector2Int.RoundToInt(center));
                 float size = grid.CellSize * 0.5f;
 
                 Handles.color = Color.yellow;
@@ -107,7 +106,7 @@ namespace ShoelaceStudios.RegionSystem.Editor
             WorldGridManager grid = WorldGridManager.Instance;
             if (grid == null) return;
 
-            Vector3 worldCenter = grid.CellToWorldSpace(coord);
+            Vector3 worldCenter = grid.GetWorldFromCell(coord);
             float size = grid.CellSize;
 
             Handles.zTest = UnityEngine.Rendering.CompareFunction.Always;
@@ -316,3 +315,4 @@ namespace ShoelaceStudios.RegionSystem.Editor
         }
     }
 }
+#endif

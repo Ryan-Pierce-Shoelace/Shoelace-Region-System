@@ -1,6 +1,7 @@
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using System.Linq;
-using ShoelaceStudios.GridSystem;
+using ShoelaceStudios.GridSystem.Core;
 using ShoelaceStudios.Utilities.Helpers;
 using UnityEditor;
 using UnityEngine;
@@ -337,3 +338,4 @@ namespace ShoelaceStudios.RegionSystem.Editor
 		#endregion
 	}
 }
+#endif

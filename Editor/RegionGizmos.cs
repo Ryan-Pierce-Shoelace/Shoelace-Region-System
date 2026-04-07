@@ -1,5 +1,7 @@
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using ShoelaceStudios.GridSystem;
+using ShoelaceStudios.GridSystem.Core;
 using UnityEditor;
 using UnityEngine;
 
@@ -37,7 +39,7 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
 			foreach (Vector2Int cell in region.ContainedCoords)
 			{
-				Vector3 cellWorld = gridManager.CellToWorldSpace(cell);
+				Vector3 cellWorld = gridManager.GetWorldFromCell(cell);
 				float size = gridManager.CellSize;
 
 				Vector3[] verts = new Vector3[]
@@ -88,7 +90,7 @@ namespace ShoelaceStudios.RegionSystem.Editor
 					center += (Vector2)c;
 				center /= island.Count;
 
-				Vector3 worldCenter = gridManager.CellToWorldSpace(Vector2Int.RoundToInt(center));
+				Vector3 worldCenter = gridManager.GetWorldFromCell(Vector2Int.RoundToInt(center));
 				float size = gridManager.CellSize * 0.5f;
 
 				Handles.color = Color.yellow;
@@ -147,3 +149,4 @@ namespace ShoelaceStudios.RegionSystem.Editor
 		}
 	}
 }
+#endif

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using ShoelaceStudios.GridSystem;
+using ShoelaceStudios.GridSystem.Core;
 using UnityEngine;
 
 namespace ShoelaceStudios.RegionSystem.Editor
@@ -54,7 +55,7 @@ namespace ShoelaceStudios.RegionSystem.Editor
 
                 if (useWorldUVs)
                 {
-                    Vector2 worldSize = grid.GridWorldSize;
+                    Vector2 worldSize = grid.GetGridWorldSize();
                     uvs.Add(new Vector2(bl.x / worldSize.x, bl.y / worldSize.y));
                     uvs.Add(new Vector2(br.x / worldSize.x, br.y / worldSize.y));
                     uvs.Add(new Vector2(tr.x / worldSize.x, tr.y / worldSize.y));

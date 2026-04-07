@@ -1,4 +1,5 @@
-using ShoelaceStudios.GridSystem;
+#if UNITY_EDITOR
+using ShoelaceStudios.GridSystem.Core;
 using ShoelaceStudios.Utilities.Helpers;
 using UnityEditor;
 using UnityEngine;
@@ -31,7 +32,7 @@ namespace ShoelaceStudios.RegionSystem.Editor
             SceneView.duringSceneGui += OnSceneGUI;
             Logic = new RegionPainterLogic(this);
             
-            WorldGridManager.Instance.InitializeGrid();
+            WorldGridManager.Instance.InitializeForEditor();
             
             if (container == null)
                 container = SceneAssetHelper.GetOrCreateAsset<SceneRegionContainerSO>(
@@ -180,7 +181,7 @@ namespace ShoelaceStudios.RegionSystem.Editor
             }
 
             Vector3 worldPoint = Logic.GetMouseWorldPoint(e);
-            Vector2Int gridCoord = grid.WorldToCell(worldPoint);
+            Vector2Int gridCoord = grid.GetCellFromWorld(worldPoint);
 
             if (!grid.IsValidCell(gridCoord)) return;
 
@@ -250,3 +251,4 @@ namespace ShoelaceStudios.RegionSystem.Editor
         }
     }
 }
+#endif
